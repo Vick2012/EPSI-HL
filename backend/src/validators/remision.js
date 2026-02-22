@@ -10,6 +10,7 @@ const itemSchema = z.object({
 const remisionSchema = z.object({
   numero: z.string().min(1),
   fecha: z.string().min(1),
+  usuario: z.string().optional(),
   metodoPago: z.enum(["efectivo", "nequi", "bancolombia"]),
   observaciones: z.string().optional(),
   cliente: z.object({

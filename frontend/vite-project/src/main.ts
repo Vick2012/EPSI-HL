@@ -34,6 +34,22 @@ app.innerHTML = `
       </header>
 
       <main class="content">
+      <section id="login-modal" class="login-modal hidden">
+        <div class="login-card">
+          <h2>Iniciar sesión</h2>
+          <label>Email
+            <input id="login-email" type="email" placeholder="admin@epsihl.com" />
+          </label>
+          <label>Contraseña
+            <input id="login-password" type="password" placeholder="••••••••" />
+          </label>
+          <div id="login-error" class="status hidden"></div>
+          <div class="login-actions">
+            <button id="login-submit" class="primary">Ingresar</button>
+            <button id="login-cancel" class="secondary">Cancelar</button>
+          </div>
+        </div>
+      </section>
       <section id="home-view" class="home">
         <section class="hero">
           <div class="hero-content">
@@ -216,6 +232,13 @@ const clienteDireccionInput = app.querySelector<HTMLInputElement>("#cliente-dire
 const clienteCiudadInput = app.querySelector<HTMLInputElement>("#cliente-ciudad")!;
 const clienteTelefonoInput = app.querySelector<HTMLInputElement>("#cliente-telefono")!;
 const remisionNumeroInput = app.querySelector<HTMLInputElement>("#remision-numero")!;
+const loginModal = app.querySelector<HTMLDivElement>("#login-modal")!;
+const loginEmail = app.querySelector<HTMLInputElement>("#login-email")!;
+const loginPassword = app.querySelector<HTMLInputElement>("#login-password")!;
+const loginError = app.querySelector<HTMLDivElement>("#login-error")!;
+const loginSubmit = app.querySelector<HTMLButtonElement>("#login-submit")!;
+const loginCancel = app.querySelector<HTMLButtonElement>("#login-cancel")!;
+let pendingAction: null | (() => void) = null;
 
 const logoImg = app.querySelector<HTMLImageElement>("#brand-logo")!;
 const logoBase = `${window.location.protocol}//${window.location.hostname}:3001`;
@@ -232,6 +255,77 @@ const goHome = () => {
   homeView.classList.remove("hidden");
   remisionView.classList.add("hidden");
   backButton.disabled = true;
+};
+
+const openLogin = (afterLogin?: () => void) => {
+  loginEmail.value = "";
+  loginPassword.value = "";
+  loginError.classList.add("hidden");
+  loginError.textContent = "";
+  pendingAction = afterLogin || null;
+  loginModal.classList.remove("hidden");
+};
+
+const closeLogin = () => {
+  loginModal.classList.add("hidden");
+};
+
+const login = async () => {
+  const email = loginEmail.value.trim();
+  const password = loginPassword.value;
+  if (!email || !password) {
+    loginError.textContent = "Email y contraseña requeridos.";
+    loginError.classList.remove("hidden");
+    return;
+  }
+  try {
+    loginSubmit.disabled = true;
+    const response = await fetch("http://localhost:3001/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!response.ok) {
+      const message = await response.text();
+      loginError.textContent = message || "Credenciales inválidas.";
+      loginError.classList.remove("hidden");
+      loginSubmit.disabled = false;
+      return;
+    }
+    const data = await response.json();
+    window.localStorage.setItem("epsiToken", data.token);
+    window.localStorage.setItem("epsiUserEmail", data.email);
+    statusEl.textContent = "Sesión iniciada.";
+    closeLogin();
+    if (pendingAction) {
+      const action = pendingAction;
+      pendingAction = null;
+      action();
+    }
+    loginSubmit.disabled = false;
+  } catch {
+    loginError.textContent = "No se pudo conectar al servidor.";
+    loginError.classList.remove("hidden");
+    loginSubmit.disabled = false;
+  }
+};
+
+const validateSession = async (): Promise<boolean> => {
+  const token = window.localStorage.getItem("epsiToken");
+  if (!token) return false;
+  try {
+    const response = await fetch("http://localhost:3001/auth/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      window.localStorage.removeItem("epsiToken");
+      window.localStorage.removeItem("epsiUserEmail");
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
 };
 
 const getConsecutivo = () => {
@@ -351,7 +445,12 @@ const goRemisiones = () => {
 };
 
 app.querySelectorAll("[data-go-remisiones]").forEach((button) => {
-  button.addEventListener("click", () => {
+  button.addEventListener("click", async () => {
+    const ok = await validateSession();
+    if (!ok) {
+      openLogin(goRemisiones);
+      return;
+    }
     goRemisiones();
   });
 });
@@ -403,6 +502,12 @@ app.querySelectorAll("input, select").forEach((input) => {
 });
 
 app.querySelector("#generar")!.addEventListener("click", async () => {
+  const ok = await validateSession();
+  if (!ok) {
+    statusEl.textContent = "Debes iniciar sesión para generar remisiones.";
+    openLogin();
+    return;
+  }
   statusEl.textContent = "Generando PDF...";
 
   const itemRows = Array.from(app.querySelectorAll<HTMLDivElement>(".items-row"));
@@ -455,3 +560,6 @@ updateFechaHora();
 setInterval(updateFechaHora, 60000);
 cargarConsecutivo();
 recalc();
+
+loginSubmit.addEventListener("click", login);
+loginCancel.addEventListener("click", closeLogin);

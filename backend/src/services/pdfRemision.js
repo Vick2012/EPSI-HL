@@ -286,6 +286,10 @@ function drawFooter(doc, remision) {
   doc
     .fontSize(8)
     .fillColor(COLORS.gray)
+    .text(`Usuario: ${remision.usuario || ""}`, MARGIN, footerY, { align: "left", width: PAGE_WIDTH - MARGIN * 2 });
+  doc
+    .fontSize(8)
+    .fillColor(COLORS.gray)
     .text(`${date} ${time}`, MARGIN, footerY, { align: "right", width: PAGE_WIDTH - MARGIN * 2 });
 }
 
