@@ -3,6 +3,7 @@ const cors = require("cors");
 const path = require("path");
 const remisionesRouter = require("./routes/remisiones");
 const { authRouter } = require("./routes/auth");
+const usersRouter = require("./routes/users");
 
 const app = express();
 
@@ -10,6 +11,7 @@ app.use(cors());
 app.use(express.json({ limit: "2mb" }));
 app.use("/assets", express.static(path.join(__dirname, "..", "assets")));
 app.use("/auth", authRouter);
+app.use("/users", usersRouter);
 
 app.get("/health", (_req, res) => {
   res.json({ ok: true, service: "epsi-hl-api" });

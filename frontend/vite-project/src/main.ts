@@ -16,7 +16,7 @@ app.innerHTML = `
       <nav class="nav">
         <button class="nav-item active" data-go-remisiones>Remisiones</button>
         <button class="nav-item" disabled>Turnos</button>
-        <button class="nav-item" disabled>Usuarios</button>
+        <button class="nav-item" data-go-usuarios>Usuarios</button>
         <button class="nav-item" disabled>BI</button>
       </nav>
       <div class="sidebar-footer">
@@ -30,7 +30,10 @@ app.innerHTML = `
           <h1 class="page-title">Sistema IRIS</h1>
           <div class="subtitle">Sistema de gestión, de consulta e información</div>
         </div>
-        <button id="back-button" class="ghost" aria-label="Volver">← Volver</button>
+        <div class="header-right">
+          <span id="current-user" class="user-pill hidden"></span>
+          <button id="back-button" class="ghost" aria-label="Volver">← Volver</button>
+        </div>
       </header>
 
       <main class="content">
@@ -38,15 +41,46 @@ app.innerHTML = `
         <div class="login-card">
           <h2>Iniciar sesión</h2>
           <label>Email
-            <input id="login-email" type="email" placeholder="admin@epsihl.com" />
+            <input id="login-email" type="email" placeholder="Hernan@epsihl.com" />
           </label>
           <label>Contraseña
-            <input id="login-password" type="password" placeholder="••••••••" />
+              <div class="password-field">
+                <input id="login-password" type="password" placeholder="••••••••" />
+                <button id="login-eye" class="icon-button" type="button">👁</button>
+              </div>
           </label>
           <div id="login-error" class="status hidden"></div>
           <div class="login-actions">
             <button id="login-submit" class="primary">Ingresar</button>
             <button id="login-cancel" class="secondary">Cancelar</button>
+          </div>
+          <div class="login-links">
+            <button id="login-forgot" class="link">¿Olvidaste la contraseña?</button>
+            <button id="login-register" class="link">Crear usuario</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="reset-modal" class="login-modal hidden">
+        <div class="login-card">
+          <h2>Recuperar contraseña</h2>
+          <label>Email
+            <input id="reset-email" type="email" placeholder="tu@correo.com" />
+          </label>
+          <label>Nueva contraseña
+            <div class="password-field">
+              <input id="reset-password" type="password" placeholder="••••••••" />
+              <button id="reset-eye" class="icon-button" type="button">👁</button>
+            </div>
+          </label>
+          <label>Token (solo si aplica)
+            <input id="reset-token" type="text" placeholder="Token recibido" />
+          </label>
+          <div id="reset-status" class="status hidden"></div>
+          <div class="login-actions">
+            <button id="reset-request" class="primary">Enviar enlace</button>
+            <button id="reset-apply" class="secondary">Restablecer</button>
+            <button id="reset-cancel" class="secondary">Cancelar</button>
           </div>
         </div>
       </section>
@@ -107,7 +141,7 @@ app.innerHTML = `
             <div class="module-icon">👥</div>
             <h2>Usuarios y roles</h2>
             <p>Gestión de usuarios, roles y permisos.</p>
-            <button class="secondary" disabled>Próximamente</button>
+            <button class="secondary user-cta" data-go-usuarios>Ir a usuarios</button>
           </article>
           <article class="module-card">
             <div class="module-icon">📊</div>
@@ -176,6 +210,9 @@ app.innerHTML = `
             <label>Observaciones
               <input id="remision-observaciones" type="text" placeholder="Observaciones" />
             </label>
+            <label id="remision-anulada-wrap" class="admin-only hidden">Anulada
+              <input id="remision-anulada" type="checkbox" />
+            </label>
           </div>
         </section>
 
@@ -208,6 +245,49 @@ app.innerHTML = `
           <div id="status" class="status"></div>
         </section>
       </section>
+
+      <section id="users-view" class="hidden">
+        <section class="card">
+          <h2>Crear usuario</h2>
+          <div class="form-grid">
+            <label>Nombre
+              <input id="user-name" type="text" placeholder="Nombre completo" />
+            </label>
+            <label>Email
+              <input id="user-email" type="email" placeholder="correo@epsihl.com" />
+            </label>
+            <label>Rol
+              <select id="user-role">
+                <option value="EMPLEADO">EMPLEADO</option>
+                <option value="SUPERVISOR">SUPERVISOR</option>
+                <option value="GERENTE">GERENTE</option>
+                <option value="ADMIN">ADMIN</option>
+              </select>
+            </label>
+            <label>Contraseña
+              <input id="user-password" type="password" placeholder="********" />
+            </label>
+          </div>
+          <div class="client-actions">
+            <button id="user-create" class="primary">Crear usuario</button>
+            <span id="users-status" class="status"></span>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Listado de usuarios</h2>
+          <div class="table">
+            <div class="table-head">
+              <span>Nombre completo</span>
+              <span>Email</span>
+              <span>Rol</span>
+              <span>Contraseña</span>
+              <span>Acciones</span>
+            </div>
+            <div id="users-list" class="table-body"></div>
+          </div>
+        </section>
+      </section>
       </main>
     </div>
   </div>
@@ -217,6 +297,7 @@ const formatCurrency = (value: number) => `$ ${value.toLocaleString("es-CO")}`;
 
 const homeView = app.querySelector<HTMLDivElement>("#home-view")!;
 const remisionView = app.querySelector<HTMLDivElement>("#remision-view")!;
+const usersView = app.querySelector<HTMLDivElement>("#users-view")!;
 const backButton = app.querySelector<HTMLButtonElement>("#back-button")!;
 const itemsTable = app.querySelector<HTMLDivElement>(".items-table")!;
 const subtotalEl = app.querySelector<HTMLSpanElement>("#subtotal")!;
@@ -232,12 +313,34 @@ const clienteDireccionInput = app.querySelector<HTMLInputElement>("#cliente-dire
 const clienteCiudadInput = app.querySelector<HTMLInputElement>("#cliente-ciudad")!;
 const clienteTelefonoInput = app.querySelector<HTMLInputElement>("#cliente-telefono")!;
 const remisionNumeroInput = app.querySelector<HTMLInputElement>("#remision-numero")!;
+const remisionAnuladaWrap = app.querySelector<HTMLLabelElement>("#remision-anulada-wrap")!;
+const remisionAnuladaInput = app.querySelector<HTMLInputElement>("#remision-anulada")!;
+const currentUserEl = app.querySelector<HTMLSpanElement>("#current-user")!;
+const userNameInput = app.querySelector<HTMLInputElement>("#user-name")!;
+const userEmailInput = app.querySelector<HTMLInputElement>("#user-email")!;
+const userRoleSelect = app.querySelector<HTMLSelectElement>("#user-role")!;
+const userPasswordInput = app.querySelector<HTMLInputElement>("#user-password")!;
+const userCreateBtn = app.querySelector<HTMLButtonElement>("#user-create")!;
+const usersStatus = app.querySelector<HTMLSpanElement>("#users-status")!;
+const usersList = app.querySelector<HTMLDivElement>("#users-list")!;
 const loginModal = app.querySelector<HTMLDivElement>("#login-modal")!;
 const loginEmail = app.querySelector<HTMLInputElement>("#login-email")!;
 const loginPassword = app.querySelector<HTMLInputElement>("#login-password")!;
+const loginEye = app.querySelector<HTMLButtonElement>("#login-eye")!;
 const loginError = app.querySelector<HTMLDivElement>("#login-error")!;
 const loginSubmit = app.querySelector<HTMLButtonElement>("#login-submit")!;
 const loginCancel = app.querySelector<HTMLButtonElement>("#login-cancel")!;
+const loginForgot = app.querySelector<HTMLButtonElement>("#login-forgot")!;
+const loginRegister = app.querySelector<HTMLButtonElement>("#login-register")!;
+const resetModal = app.querySelector<HTMLDivElement>("#reset-modal")!;
+const resetEmail = app.querySelector<HTMLInputElement>("#reset-email")!;
+const resetPassword = app.querySelector<HTMLInputElement>("#reset-password")!;
+const resetEye = app.querySelector<HTMLButtonElement>("#reset-eye")!;
+const resetToken = app.querySelector<HTMLInputElement>("#reset-token")!;
+const resetStatus = app.querySelector<HTMLDivElement>("#reset-status")!;
+const resetRequest = app.querySelector<HTMLButtonElement>("#reset-request")!;
+const resetApply = app.querySelector<HTMLButtonElement>("#reset-apply")!;
+const resetCancel = app.querySelector<HTMLButtonElement>("#reset-cancel")!;
 let pendingAction: null | (() => void) = null;
 
 const logoImg = app.querySelector<HTMLImageElement>("#brand-logo")!;
@@ -254,6 +357,7 @@ logoImg.addEventListener("error", () => {
 const goHome = () => {
   homeView.classList.remove("hidden");
   remisionView.classList.add("hidden");
+  usersView.classList.add("hidden");
   backButton.disabled = true;
 };
 
@@ -264,10 +368,60 @@ const openLogin = (afterLogin?: () => void) => {
   loginError.textContent = "";
   pendingAction = afterLogin || null;
   loginModal.classList.remove("hidden");
+  loginModal.style.display = "flex";
 };
 
 const closeLogin = () => {
   loginModal.classList.add("hidden");
+  loginModal.style.removeProperty("display");
+};
+
+const applyRole = (role: string | null) => {
+  const isAdmin = role === "ADMIN";
+  remisionNumeroInput.readOnly = !isAdmin;
+  remisionAnuladaWrap.classList.toggle("hidden", !isAdmin);
+  if (!isAdmin) {
+    remisionAnuladaInput.checked = false;
+  }
+};
+
+const refreshRole = async () => {
+  const token = window.localStorage.getItem("epsiToken");
+  if (!token) {
+    applyRole(null);
+    return;
+  }
+  try {
+    const response = await fetch("http://localhost:3001/auth/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      applyRole(null);
+      return;
+    }
+    const data = await response.json();
+    if (data?.role) {
+      window.localStorage.setItem("epsiRole", data.role);
+      applyRole(data.role);
+    }
+  } catch {
+    applyRole(null);
+  }
+};
+
+const openReset = () => {
+  resetEmail.value = "";
+  resetPassword.value = "";
+  resetToken.value = "";
+  resetStatus.classList.add("hidden");
+  resetStatus.textContent = "";
+  resetModal.classList.remove("hidden");
+  resetModal.style.display = "flex";
+};
+
+const closeReset = () => {
+  resetModal.classList.add("hidden");
+  resetModal.style.removeProperty("display");
 };
 
 const login = async () => {
@@ -295,6 +449,12 @@ const login = async () => {
     const data = await response.json();
     window.localStorage.setItem("epsiToken", data.token);
     window.localStorage.setItem("epsiUserEmail", data.email);
+    if (data.role) {
+      window.localStorage.setItem("epsiRole", data.role);
+      applyRole(data.role);
+    }
+    currentUserEl.textContent = `Usuario: ${data.email}`;
+    currentUserEl.classList.remove("hidden");
     statusEl.textContent = "Sesión iniciada.";
     closeLogin();
     if (pendingAction) {
@@ -307,24 +467,6 @@ const login = async () => {
     loginError.textContent = "No se pudo conectar al servidor.";
     loginError.classList.remove("hidden");
     loginSubmit.disabled = false;
-  }
-};
-
-const validateSession = async (): Promise<boolean> => {
-  const token = window.localStorage.getItem("epsiToken");
-  if (!token) return false;
-  try {
-    const response = await fetch("http://localhost:3001/auth/me", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!response.ok) {
-      window.localStorage.removeItem("epsiToken");
-      window.localStorage.removeItem("epsiUserEmail");
-      return false;
-    }
-    return true;
-  } catch {
-    return false;
   }
 };
 
@@ -440,14 +582,24 @@ guardarClienteBtn.addEventListener("click", () => {
 const goRemisiones = () => {
   homeView.classList.add("hidden");
   remisionView.classList.remove("hidden");
+  usersView.classList.add("hidden");
   backButton.disabled = false;
   cargarConsecutivo();
+  applyRole(window.localStorage.getItem("epsiRole"));
+};
+
+const goUsers = () => {
+  homeView.classList.add("hidden");
+  remisionView.classList.add("hidden");
+  usersView.classList.remove("hidden");
+  backButton.disabled = false;
+  loadUsers();
 };
 
 app.querySelectorAll("[data-go-remisiones]").forEach((button) => {
-  button.addEventListener("click", async () => {
-    const ok = await validateSession();
-    if (!ok) {
+  button.addEventListener("click", () => {
+    const token = window.localStorage.getItem("epsiToken");
+    if (!token) {
       openLogin(goRemisiones);
       return;
     }
@@ -455,7 +607,23 @@ app.querySelectorAll("[data-go-remisiones]").forEach((button) => {
   });
 });
 
+app.querySelectorAll("[data-go-usuarios]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const token = window.localStorage.getItem("epsiToken");
+    if (!token) {
+      openLogin(goUsers);
+      return;
+    }
+    goUsers();
+  });
+});
+
 backButton.addEventListener("click", () => {
+  window.localStorage.removeItem("epsiToken");
+  window.localStorage.removeItem("epsiUserEmail");
+  window.localStorage.removeItem("epsiRole");
+  currentUserEl.textContent = "";
+  currentUserEl.classList.add("hidden");
   goHome();
 });
 
@@ -502,8 +670,8 @@ app.querySelectorAll("input, select").forEach((input) => {
 });
 
 app.querySelector("#generar")!.addEventListener("click", async () => {
-  const ok = await validateSession();
-  if (!ok) {
+  const token = window.localStorage.getItem("epsiToken");
+  if (!token) {
     statusEl.textContent = "Debes iniciar sesión para generar remisiones.";
     openLogin();
     return;
@@ -523,11 +691,12 @@ app.querySelector("#generar")!.addEventListener("click", async () => {
   const iva = total * (ivaPorcentaje / 100);
   const subtotal = total - iva;
 
-  const payload: RemisionPayload = {
+  const payload = {
     numero: (app.querySelector<HTMLInputElement>("#remision-numero")!.value || "0001").trim(),
     fecha: new Date().toISOString(),
     metodoPago: app.querySelector<HTMLSelectElement>("#remision-pago")!.value as RemisionPayload["metodoPago"],
     observaciones: app.querySelector<HTMLInputElement>("#remision-observaciones")!.value || "",
+    anulada: remisionAnuladaInput.checked,
     cliente: {
       nombre: app.querySelector<HTMLInputElement>("#cliente-nombre")!.value || "",
       nit: app.querySelector<HTMLInputElement>("#cliente-nit")!.value || "",
@@ -541,7 +710,7 @@ app.querySelector("#generar")!.addEventListener("click", async () => {
     ivaPorcentaje,
     iva,
     total,
-  };
+  } as RemisionPayload;
 
   try {
     const pdf = await generarRemisionPdf(payload);
@@ -552,7 +721,121 @@ app.querySelector("#generar")!.addEventListener("click", async () => {
     setConsecutivo(siguiente);
     cargarConsecutivo();
   } catch (error) {
+    if (error instanceof Error && error.message === "UNAUTHORIZED") {
+      statusEl.textContent = "Debes iniciar sesión para generar remisiones.";
+      openLogin();
+      return;
+    }
     statusEl.textContent = "Error al generar PDF.";
+  }
+});
+
+const loadUsers = async () => {
+  const token = window.localStorage.getItem("epsiToken");
+  if (!token) return;
+  usersStatus.textContent = "Cargando usuarios...";
+  try {
+    const response = await fetch("http://localhost:3001/users", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      usersStatus.textContent = "No tienes permisos para ver usuarios.";
+      return;
+    }
+    const data = await response.json();
+    usersList.innerHTML = data.users
+    .map(
+      (user: any) => `
+        <div class="table-row">
+          <span>${user.name || "Sin nombre"}</span>
+          <span>${user.email}</span>
+          <span>${user.role}</span>
+          <span>********</span>
+          <div class="actions">
+            <button class="secondary" data-reset-user="${user.id}">Reset</button>
+            <button class="secondary" data-delete-user="${user.id}">Eliminar</button>
+          </div>
+        </div>
+      `
+    )
+    .join("");
+    usersStatus.textContent = "";
+
+    usersList.querySelectorAll("[data-reset-user]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = (btn as HTMLButtonElement).dataset.resetUser;
+        if (!id) return;
+        const responseReset = await fetch(`http://localhost:3001/users/${id}/reset`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!responseReset.ok) {
+          usersStatus.textContent = "No se pudo resetear.";
+          return;
+        }
+        const data = await responseReset.json();
+        usersStatus.textContent = `Nueva contraseña temporal: ${data.tempPassword}`;
+      });
+    });
+
+    usersList.querySelectorAll("[data-delete-user]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = (btn as HTMLButtonElement).dataset.deleteUser;
+        if (!id) return;
+        const confirmDelete = window.confirm("¿Eliminar usuario?");
+        if (!confirmDelete) return;
+        const responseDelete = await fetch(`http://localhost:3001/users/${id}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!responseDelete.ok) {
+          usersStatus.textContent = "No se pudo eliminar.";
+          return;
+        }
+        await loadUsers();
+      });
+    });
+  } catch {
+    usersStatus.textContent = "Error cargando usuarios.";
+  }
+};
+
+userCreateBtn.addEventListener("click", async () => {
+  const token = window.localStorage.getItem("epsiToken");
+  if (!token) {
+    usersStatus.textContent = "Debes iniciar sesión.";
+    openLogin(goUsers);
+    return;
+  }
+  const payload = {
+    name: userNameInput.value.trim(),
+    email: userEmailInput.value.trim(),
+    role: userRoleSelect.value,
+    password: userPasswordInput.value,
+  };
+  if (!payload.email || !payload.password) {
+    usersStatus.textContent = "Email y contraseña son obligatorios.";
+    return;
+  }
+  usersStatus.textContent = "Creando usuario...";
+  try {
+    const response = await fetch("http://localhost:3001/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const msg = await response.text();
+      usersStatus.textContent = msg || "No se pudo crear el usuario.";
+      return;
+    }
+    userNameInput.value = "";
+    userEmailInput.value = "";
+    userPasswordInput.value = "";
+    usersStatus.textContent = "Usuario creado.";
+    loadUsers();
+  } catch {
+    usersStatus.textContent = "Error creando usuario.";
   }
 });
 
@@ -561,5 +844,65 @@ setInterval(updateFechaHora, 60000);
 cargarConsecutivo();
 recalc();
 
+const savedUser = window.localStorage.getItem("epsiUserEmail");
+if (savedUser) {
+  currentUserEl.textContent = `Usuario: ${savedUser}`;
+  currentUserEl.classList.remove("hidden");
+}
+applyRole(window.localStorage.getItem("epsiRole"));
+refreshRole();
+
 loginSubmit.addEventListener("click", login);
 loginCancel.addEventListener("click", closeLogin);
+loginEye.addEventListener("click", () => {
+  loginPassword.type = loginPassword.type === "password" ? "text" : "password";
+});
+loginForgot.addEventListener("click", () => {
+  closeLogin();
+  openReset();
+});
+loginRegister.addEventListener("click", () => {
+  statusEl.textContent = "La creación de usuarios la gestiona el ADMIN.";
+  closeLogin();
+});
+
+resetCancel.addEventListener("click", closeReset);
+resetEye.addEventListener("click", () => {
+  resetPassword.type = resetPassword.type === "password" ? "text" : "password";
+});
+resetRequest.addEventListener("click", async () => {
+  const email = resetEmail.value.trim();
+  if (!email) {
+    resetStatus.textContent = "Ingresa el correo.";
+    resetStatus.classList.remove("hidden");
+    return;
+  }
+  const response = await fetch("http://localhost:3001/auth/request-reset", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  const data = await response.json();
+  resetStatus.textContent = data.devToken
+    ? `Token dev: ${data.devToken}`
+    : data.message || "Solicitud enviada.";
+  resetStatus.classList.remove("hidden");
+});
+
+resetApply.addEventListener("click", async () => {
+  const token = resetToken.value.trim();
+  const password = resetPassword.value;
+  if (!token || !password) {
+    resetStatus.textContent = "Token y contraseña requeridos.";
+    resetStatus.classList.remove("hidden");
+    return;
+  }
+  const response = await fetch("http://localhost:3001/auth/reset-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, password }),
+  });
+  const data = await response.json();
+  resetStatus.textContent = data.message || "Proceso terminado.";
+  resetStatus.classList.remove("hidden");
+});

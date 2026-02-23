@@ -95,4 +95,4 @@ Siguiente: crear el esqueleto real de los módulos (API + UI) en el Paso 6.
        "total": 100000
      }
      ```
-4. El API responderá un PDF con la plantilla similar a la imagen.
+4. El API responderá un PDF con la plantilla.

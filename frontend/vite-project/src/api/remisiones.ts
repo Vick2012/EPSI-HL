@@ -10,6 +10,7 @@ export type RemisionPayload = {
   fecha: string;
   metodoPago: "efectivo" | "nequi" | "bancolombia";
   observaciones?: string;
+  anulada?: boolean;
   cliente: {
     tipoDocumento?: string;
     nombre: string;
@@ -37,6 +38,9 @@ export async function generarRemisionPdf(payload: RemisionPayload) {
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error("UNAUTHORIZED");
+    }
     const text = await response.text();
     throw new Error(text || "Error generando PDF");
   }

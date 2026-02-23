@@ -117,6 +117,22 @@ body {
   gap: 16px;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-pill {
+  background: #fde8d5;
+  color: #c56f1f;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid rgba(241, 154, 62, 0.6);
+}
+
 .login-modal {
   position: fixed;
   inset: 0;
@@ -142,6 +158,25 @@ body {
   display: flex;
   gap: 10px;
   justify-content: flex-end;
+}
+
+.login-links {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.link {
+  background: none;
+  border: none;
+  color: #1f3f83;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.link:hover {
+  text-decoration: underline;
 }
 
 .header-actions {
@@ -281,6 +316,17 @@ body {
   width: fit-content;
 }
 
+.user-cta {
+  background: #f19a3e;
+  color: #ffffff;
+  border-color: #f19a3e;
+  box-shadow: 0 8px 16px rgba(241, 154, 62, 0.3);
+}
+
+.user-cta:hover {
+  background: #e0892f;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -296,12 +342,57 @@ label {
   text-align: center;
 }
 
+.admin-only {
+  background: #fff1f0;
+  border: 1px solid rgba(179, 32, 45, 0.35);
+  color: #b3202d;
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+#remision-anulada-wrap {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  text-align: left;
+  gap: 12px;
+}
+
+#remision-anulada {
+  width: 20px;
+  height: 20px;
+  accent-color: #b3202d;
+}
+
 input,
 select {
   padding: 10px 12px;
   border-radius: 8px;
   border: 1px solid #d0d5dd;
   font-size: 14px;
+}
+
+.password-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.password-field input {
+  flex: 1;
+}
+
+.icon-button {
+  border: 1px solid #d0d5dd;
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.icon-button:hover {
+  border-color: #f19a3e;
 }
 
 .readonly-field {
@@ -352,6 +443,52 @@ select {
   align-items: center;
   gap: 12px;
   margin-top: 8px;
+}
+
+.table {
+  display: grid;
+  gap: 8px;
+}
+
+.table-head,
+.table-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1.2fr 0.8fr 0.8fr 0.8fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.table-head {
+  font-weight: 700;
+  color: #1f3f83;
+}
+
+.table-row {
+  padding: 8px 0;
+  border-bottom: 1px solid #eef2f6;
+}
+
+.table-body {
+  display: grid;
+  gap: 6px;
+}
+
+.user-list {
+  display: grid;
+  gap: 8px;
+}
+
+.user-row {
+  background: #f9fafb;
+  border: 1px solid #e4e7ec;
+  border-radius: 8px;
+  padding: 10px 12px;
 }
 
 .home {

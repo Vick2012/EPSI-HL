@@ -23,6 +23,21 @@ function drawBox(doc, x, y, w, h) {
   doc.rect(x, y, w, h).stroke(COLORS.blue);
 }
 
+function drawWatermark(doc, text) {
+  const centerX = PAGE_WIDTH / 2;
+  const centerY = PAGE_HEIGHT / 2;
+  doc.save();
+  doc.opacity(0.18);
+  doc.fillColor(COLORS.red).fontSize(120);
+  doc.rotate(-35, { origin: [centerX, centerY] });
+  doc.text(text, centerX - PAGE_WIDTH, centerY - 60, {
+    width: PAGE_WIDTH * 2,
+    align: "center",
+  });
+  doc.restore();
+  doc.opacity(1);
+}
+
 function drawHeader(doc, remision, logoPath) {
   const left = MARGIN;
   const top = MARGIN;
@@ -333,6 +348,9 @@ async function generateRemisionPdf(remision) {
         drawPagoFirma(doc, remision, logoPath);
         drawTotales(doc, remision);
         drawFooter(doc, remision);
+        if (remision.anulada) {
+          drawWatermark(doc, "ANULADA");
+        }
         doc.end();
       })
       .catch((error) => {

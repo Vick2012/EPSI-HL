@@ -6,6 +6,9 @@ const { authMiddleware } = require("./auth");
 const router = express.Router();
 
 router.post("/", authMiddleware, async (req, res) => {
+  if (req.user?.role !== "ADMIN" && req.body?.anulada) {
+    return res.status(403).json({ ok: false, message: "Solo ADMIN puede anular." });
+  }
   const parse = validateRemision(req.body);
   if (!parse.ok) {
     return res.status(400).json({ ok: false, errors: parse.errors });
