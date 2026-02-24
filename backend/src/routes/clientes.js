@@ -1,4 +1,5 @@
 const express = require("express");
+const fs = require("fs");
 const { getDb } = require("../db");
 const { authMiddleware } = require("./auth");
 
@@ -22,6 +23,7 @@ router.post("/", authMiddleware, async (req, res) => {
   }
   const now = new Date().toISOString();
   const db = await getDb();
+  const existing = await db.get("SELECT id FROM clientes WHERE numero_documento = ?", numero);
   await db.run(
     `INSERT INTO clientes
       (tipo_documento, numero_documento, dv, nombre, ciudad, direccion, telefono, email, created_at, updated_at)
@@ -47,6 +49,29 @@ router.post("/", authMiddleware, async (req, res) => {
     now,
     now
   );
+  if (!existing) {
+    const csvPath = process.env.CLIENTES_CSV_PATH;
+    if (csvPath) {
+      if (!fs.existsSync(csvPath)) {
+        const header =
+          "TIPO DE DOCUMENTO;NUMERO DE DOCUMENTO;DIGITO DE VERIFICACION;NOMBRE O RAZON SOCIAL;CIUDAD;DIRECCION;TELEFONO;CORREO ELECTRONICO\n";
+        fs.writeFileSync(csvPath, header);
+      }
+      const line = [
+        payload.tipo_documento || "",
+        numero,
+        payload.dv || "",
+        payload.nombre || "",
+        payload.ciudad || "",
+        payload.direccion || "",
+        payload.telefono || "",
+        payload.email || "",
+      ]
+        .map((value) => String(value).replace(/[\r\n]+/g, " "))
+        .join(";");
+      fs.appendFileSync(csvPath, `${line}\n`);
+    }
+  }
   return res.json({ ok: true });
 });
 

@@ -169,8 +169,34 @@ function drawCliente(doc, remision) {
   const nitLabel = remision.cliente.dv
     ? `${remision.cliente.nit}-${remision.cliente.dv}`
     : remision.cliente.nit;
+  const rawTipoDocumento =
+    remision.cliente.tipoDocumento || remision.cliente.tipo_documento || "";
+  const tipoDocumento = String(rawTipoDocumento).trim().toUpperCase();
+  const tipoLabelMap = {
+    CC: "C.C.",
+    "C.C.": "C.C.",
+    "C.C": "C.C.",
+    CE: "C.E.",
+    "C.E.": "C.E.",
+    "C.E": "C.E.",
+    PAS: "PASAPORTE",
+    PASAPORTE: "PASAPORTE",
+    PPT: "PPT",
+    NIT: "NIT",
+    OTRO: "OTRO",
+  };
+  let tipoLabel = tipoLabelMap[tipoDocumento];
+  if (!tipoLabel && tipoDocumento) {
+    if (tipoDocumento.includes("CC")) tipoLabel = "C.C.";
+    else if (tipoDocumento.includes("CE")) tipoLabel = "C.E.";
+    else if (tipoDocumento.includes("PAS")) tipoLabel = "PASAPORTE";
+    else if (tipoDocumento.includes("PPT")) tipoLabel = "PPT";
+    else if (tipoDocumento.includes("NIT")) tipoLabel = "NIT";
+    else tipoLabel = tipoDocumento;
+  }
+  if (!tipoLabel) tipoLabel = "C.C./NIT";
   const labels = [
-    ["C.C./NIT:", nitLabel],
+    [`${tipoLabel}:`, nitLabel],
     ["NOMBRE/RAZON SOCIAL:", remision.cliente.nombre],
     ["DIRECCION:", remision.cliente.direccion],
     ["CIUDAD:", remision.cliente.ciudad || ""],

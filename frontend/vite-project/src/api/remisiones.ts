@@ -29,7 +29,10 @@ export type RemisionPayload = {
 
 export async function generarRemisionPdf(payload: RemisionPayload) {
   const token = window.localStorage.getItem("epsiToken");
-  const response = await fetch("http://localhost:3001/remisiones", {
+  const apiBase =
+    import.meta.env.VITE_API_URL ||
+    `${window.location.protocol}//${window.location.hostname}:3001`;
+  const response = await fetch(`${apiBase}/remisiones`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

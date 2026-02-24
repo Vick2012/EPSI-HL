@@ -169,7 +169,7 @@ app.innerHTML = `
         <section class="card">
           <h2>Datos del cliente</h2>
           <div class="form-grid">
-            <label>NIT / C.C.
+            <label>Numero de identidificación
               <input id="cliente-nit" type="text" placeholder="NIT / C.C." />
             </label>
             <label>DV
@@ -313,6 +313,10 @@ app.innerHTML = `
   </div>
 `;
 
+const API_BASE =
+  import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:3001`;
+const ASSETS_BASE = import.meta.env.VITE_ASSETS_URL || API_BASE;
+
 const formatCurrency = (value: number) => `$ ${value.toLocaleString("es-CO")}`;
 
 const homeView = app.querySelector<HTMLDivElement>("#home-view")!;
@@ -375,7 +379,7 @@ const resetCancel = app.querySelector<HTMLButtonElement>("#reset-cancel")!;
 let pendingAction: null | (() => void) = null;
 
 const logoImg = app.querySelector<HTMLImageElement>("#brand-logo")!;
-const logoBase = `${window.location.protocol}//${window.location.hostname}:3001`;
+const logoBase = ASSETS_BASE;
 const logoSources = [
   `${logoBase}/assets/Icono.png`,
   "/Icono.png",
@@ -413,9 +417,15 @@ const closeLogin = () => {
   loginModal.style.removeProperty("display");
 };
 
+const canAccessUsersModule = (role: string | null) =>
+  role === "GERENCIAL" || role === "DIRECCION" || role === "SUPERVISION";
+
 const applyRole = (role: string | null) => {
   const isGerencial = role === "GERENCIAL";
   const isEditing = Boolean(editingRemisionNumero);
+  app.querySelectorAll<HTMLButtonElement>("[data-go-usuarios]").forEach((button) => {
+    button.disabled = false;
+  });
   remisionNumeroInput.readOnly = !isGerencial || isEditing;
   remisionAnuladaWrap.classList.toggle("hidden", !isGerencial);
   buscarRemisionSection.classList.toggle("hidden", !isGerencial);
@@ -433,7 +443,7 @@ const refreshRole = async () => {
     return;
   }
   try {
-    const response = await fetch("http://localhost:3001/auth/me", {
+    const response = await fetch(`${API_BASE}/auth/me`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!response.ok) {
@@ -441,9 +451,10 @@ const refreshRole = async () => {
       return;
     }
     const data = await response.json();
-    if (data?.role) {
-      window.localStorage.setItem("epsiRole", data.role);
-      applyRole(data.role);
+    const role = data?.role || data?.user?.role;
+    if (role) {
+      window.localStorage.setItem("epsiRole", role);
+      applyRole(role);
     }
   } catch {
     applyRole(null);
@@ -475,7 +486,7 @@ const login = async () => {
   }
   try {
     loginSubmit.disabled = true;
-    const response = await fetch("http://localhost:3001/auth/login", {
+    const response = await fetch(`${API_BASE}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -573,7 +584,7 @@ const actualizarDv = () => {
 const fetchCliente = async (nit: string) => {
   const token = window.localStorage.getItem("epsiToken");
   if (!token) return null;
-  const response = await fetch(`http://localhost:3001/clientes/${encodeURIComponent(nit)}`, {
+  const response = await fetch(`${API_BASE}/clientes/${encodeURIComponent(nit)}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok) return null;
@@ -594,7 +605,7 @@ const saveClienteDb = async (cliente: Cliente) => {
     telefono: cliente.telefono || null,
     email: "",
   };
-  const response = await fetch("http://localhost:3001/clientes", {
+  const response = await fetch(`${API_BASE}/clientes`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify(payload),
@@ -603,7 +614,8 @@ const saveClienteDb = async (cliente: Cliente) => {
 };
 
 const llenarCliente = (cliente: Record<string, string>) => {
-  clienteTipoSelect.value = cliente.tipoDocumento || "CC";
+  const tipoDocumento = cliente.tipoDocumento || cliente.tipo_documento || "CC";
+  clienteTipoSelect.value = tipoDocumento;
   clienteNombreInput.value = cliente.nombre || "";
   clienteDireccionInput.value = cliente.direccion || "";
   clienteCiudadInput.value = cliente.ciudad || "";
@@ -668,6 +680,18 @@ const goRemisiones = () => {
 };
 
 const goUsers = () => {
+  const role = window.localStorage.getItem("epsiRole");
+  if (!canAccessUsersModule(role)) {
+    window.alert("No tienes permisos. Inicia sesión con un usuario autorizado.");
+    window.localStorage.removeItem("epsiToken");
+    window.localStorage.removeItem("epsiUserEmail");
+    window.localStorage.removeItem("epsiRole");
+    currentUserEl.textContent = "";
+    currentUserEl.classList.add("hidden");
+    applyRole(null);
+    openLogin(goUsers);
+    return;
+  }
   homeView.classList.add("hidden");
   remisionView.classList.add("hidden");
   usersView.classList.remove("hidden");
@@ -798,7 +822,7 @@ buscarRemisionBtn.addEventListener("click", async () => {
   }
   buscarRemisionStatus.textContent = "Buscando remisión...";
   try {
-    const response = await fetch(`http://localhost:3001/remisiones/${encodeURIComponent(numero)}`, {
+    const response = await fetch(`${API_BASE}/remisiones/${encodeURIComponent(numero)}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!response.ok) {
@@ -884,7 +908,7 @@ guardarRemisionBtn.addEventListener("click", async () => {
   statusEl.textContent = "Guardando cambios...";
   try {
     const payload = buildRemisionPayload();
-    const response = await fetch(`http://localhost:3001/remisiones/${encodeURIComponent(editingRemisionNumero)}`, {
+    const response = await fetch(`${API_BASE}/remisiones/${encodeURIComponent(editingRemisionNumero)}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify(payload),
@@ -894,9 +918,12 @@ guardarRemisionBtn.addEventListener("click", async () => {
       statusEl.textContent = msg || "No se pudo guardar la remisión.";
       return;
     }
-    const pdfResponse = await fetch(`http://localhost:3001/remisiones/${encodeURIComponent(editingRemisionNumero)}/pdf`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const pdfResponse = await fetch(
+      `${API_BASE}/remisiones/${encodeURIComponent(editingRemisionNumero)}/pdf`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
     if (pdfResponse.ok) {
       const pdf = await pdfResponse.blob();
       const url = URL.createObjectURL(pdf);
@@ -941,7 +968,7 @@ const loadUsers = async () => {
   if (!token) return;
   usersStatus.textContent = "Cargando usuarios...";
   try {
-    const response = await fetch("http://localhost:3001/users", {
+    const response = await fetch(`${API_BASE}/users`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!response.ok) {
@@ -989,7 +1016,7 @@ const loadUsers = async () => {
       btn.addEventListener("click", async () => {
         const id = (btn as HTMLButtonElement).dataset.resetUser;
         if (!id) return;
-        const responseReset = await fetch(`http://localhost:3001/users/${id}/reset`, {
+        const responseReset = await fetch(`${API_BASE}/users/${id}/reset`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -1008,7 +1035,7 @@ const loadUsers = async () => {
         if (!id) return;
         const confirmDelete = window.confirm("¿Eliminar usuario?");
         if (!confirmDelete) return;
-        const responseDelete = await fetch(`http://localhost:3001/users/${id}`, {
+        const responseDelete = await fetch(`${API_BASE}/users/${id}`, {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -1052,9 +1079,7 @@ userCreateBtn.addEventListener("click", async () => {
   };
   usersStatus.textContent = isEditing ? "Guardando cambios..." : "Creando usuario...";
   try {
-    const endpoint = isEditing
-      ? `http://localhost:3001/users/${editingUserId}`
-      : "http://localhost:3001/users";
+    const endpoint = isEditing ? `${API_BASE}/users/${editingUserId}` : `${API_BASE}/users`;
     const response = await fetch(endpoint, {
       method: isEditing ? "PUT" : "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -1128,7 +1153,7 @@ resetRequest.addEventListener("click", async () => {
     resetStatus.classList.remove("hidden");
     return;
   }
-  const response = await fetch("http://localhost:3001/auth/request-reset", {
+  const response = await fetch(`${API_BASE}/auth/request-reset`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email }),
@@ -1148,7 +1173,7 @@ resetApply.addEventListener("click", async () => {
     resetStatus.classList.remove("hidden");
     return;
   }
-  const response = await fetch("http://localhost:3001/auth/reset-password", {
+  const response = await fetch(`${API_BASE}/auth/reset-password`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ token, password }),

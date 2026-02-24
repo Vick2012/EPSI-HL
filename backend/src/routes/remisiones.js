@@ -7,6 +7,7 @@ const path = require("path");
 const fs = require("fs");
 
 const router = express.Router();
+const PDF_OUTPUT_DIR = process.env.PDF_OUTPUT_DIR || "C:\\Users\\USER\\Desktop\\Remisiones PDF";
 
 router.post("/", authMiddleware, async (req, res) => {
   const canAnular = req.user?.role === "GERENCIAL";
@@ -39,12 +40,11 @@ router.post("/", authMiddleware, async (req, res) => {
       now
     );
     const pdfBuffer = await generateRemisionPdf(data);
-    const pdfDir = "C:\\Users\\USER\\Desktop\\Remisiones PDF";
-    if (!fs.existsSync(pdfDir)) {
-      fs.mkdirSync(pdfDir, { recursive: true });
+    if (!fs.existsSync(PDF_OUTPUT_DIR)) {
+      fs.mkdirSync(PDF_OUTPUT_DIR, { recursive: true });
     }
     const safeNumero = String(data.numero).replace(/[^\w\-]+/g, "_");
-    const pdfPath = path.join(pdfDir, `remision_${safeNumero}.pdf`);
+    const pdfPath = path.join(PDF_OUTPUT_DIR, `remision_${safeNumero}.pdf`);
     fs.writeFileSync(pdfPath, pdfBuffer);
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", "inline; filename=remision.pdf");
@@ -85,12 +85,11 @@ router.get("/:numero/pdf", authMiddleware, async (req, res) => {
   try {
     const data = JSON.parse(record.data_json);
     const pdfBuffer = await generateRemisionPdf(data);
-    const pdfDir = "C:\\Users\\USER\\Desktop\\Remisiones PDF";
-    if (!fs.existsSync(pdfDir)) {
-      fs.mkdirSync(pdfDir, { recursive: true });
+    if (!fs.existsSync(PDF_OUTPUT_DIR)) {
+      fs.mkdirSync(PDF_OUTPUT_DIR, { recursive: true });
     }
     const safeNumero = String(data.numero).replace(/[^\w\-]+/g, "_");
-    const pdfPath = path.join(pdfDir, `remision_${safeNumero}.pdf`);
+    const pdfPath = path.join(PDF_OUTPUT_DIR, `remision_${safeNumero}.pdf`);
     fs.writeFileSync(pdfPath, pdfBuffer);
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", "inline; filename=remision.pdf");

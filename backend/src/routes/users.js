@@ -53,6 +53,13 @@ router.put("/:id", authMiddleware, requireAnyRole(USER_MANAGEMENT_ROLES), async 
   if (!user) {
     return res.status(404).json({ ok: false, message: "Usuario no encontrado" });
   }
+  if (email) {
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const existing = await db.get("SELECT id FROM users WHERE email = ?", normalizedEmail);
+    if (existing && String(existing.id) !== String(id)) {
+      return res.status(409).json({ ok: false, message: "El email ya está en uso" });
+    }
+  }
   let passwordHash;
   if (password) {
     passwordHash = await bcrypt.hash(password, 10);
