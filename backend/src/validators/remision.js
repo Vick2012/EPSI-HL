@@ -18,6 +18,7 @@ const remisionSchema = z.object({
     tipoDocumento: z.string().optional(),
     nombre: z.string().min(1),
     nit: z.string().min(1),
+    dv: z.string().optional(),
     direccion: z.string().min(1),
     ciudad: z.string().optional(),
     telefono: z.string().optional(),

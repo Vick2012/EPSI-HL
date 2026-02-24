@@ -2,6 +2,7 @@ const express = require("express");
 const bcrypt = require("bcrypt");
 const { getDb } = require("../db");
 const { authMiddleware, requireRole } = require("./auth");
+const { validateUserCreate, validateUserUpdate } = require("../validators/users");
 
 const router = express.Router();
 
@@ -12,27 +13,24 @@ router.get("/", authMiddleware, requireRole("ADMIN"), async (_req, res) => {
 });
 
 router.post("/", authMiddleware, requireRole("ADMIN"), async (req, res) => {
-  const { email, password, role, name } = req.body || {};
-  const normalizedEmail = String(email || "").trim().toLowerCase();
-  const normalizedRole = String(role || "").toUpperCase();
-  if (!normalizedEmail || !password || !normalizedRole) {
-    return res.status(400).json({ ok: false, message: "Datos incompletos" });
+  const parse = validateUserCreate(req.body || {});
+  if (!parse.ok) {
+    return res.status(400).json({ ok: false, errors: parse.errors });
   }
-  if (!["ADMIN", "GERENTE", "EMPLEADO"].includes(normalizedRole)) {
-    return res.status(400).json({ ok: false, message: "Rol inválido" });
-  }
+  const normalizedEmail = parse.data.email.trim().toLowerCase();
+  const normalizedRole = parse.data.role.toUpperCase();
   const db = await getDb();
   const existing = await db.get("SELECT id FROM users WHERE email = ?", normalizedEmail);
   if (existing) {
     return res.status(409).json({ ok: false, message: "El usuario ya existe" });
   }
-  const passwordHash = await bcrypt.hash(password, 10);
+  const passwordHash = await bcrypt.hash(parse.data.password, 10);
   await db.run(
     "INSERT INTO users (email, password_hash, role, name, created_at) VALUES (?, ?, ?, ?, ?)",
     normalizedEmail,
     passwordHash,
     normalizedRole,
-    String(name || "").trim(),
+    String(parse.data.name || "").trim(),
     new Date().toISOString()
   );
   return res.json({ ok: true });
@@ -40,7 +38,14 @@ router.post("/", authMiddleware, requireRole("ADMIN"), async (req, res) => {
 
 router.put("/:id", authMiddleware, requireRole("ADMIN"), async (req, res) => {
   const { id } = req.params;
-  const { email, role, name, password } = req.body || {};
+  const parse = validateUserUpdate(req.body || {});
+  if (!parse.ok) {
+    return res.status(400).json({ ok: false, errors: parse.errors });
+  }
+  const { email, role, name, password } = parse.data;
+  if (!email && !role && !name && !password) {
+    return res.status(400).json({ ok: false, message: "Sin cambios para actualizar" });
+  }
   const db = await getDb();
   const user = await db.get("SELECT id FROM users WHERE id = ?", id);
   if (!user) {

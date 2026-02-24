@@ -15,6 +15,7 @@ export type RemisionPayload = {
     tipoDocumento?: string;
     nombre: string;
     nit: string;
+    dv?: string;
     direccion: string;
     ciudad?: string;
     telefono?: string;

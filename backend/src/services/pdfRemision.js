@@ -4,7 +4,18 @@ const fs = require("fs");
 const sharp = require("sharp");
 
 const ASSETS_DIR = path.join(__dirname, "..", "..", "assets");
-const LOGO_PATH = path.join(ASSETS_DIR, "epsi-hl-logo.png");
+const HEADER_LOGO_PATHS = [
+  process.env.HEADER_LOGO_PATH,
+  path.join(ASSETS_DIR, "epsi-hl-logo-full.png"),
+  path.join(ASSETS_DIR, "epsi-hl-logo.png"),
+  "C:\\Users\\USER\\.cursor\\projects\\c-Users-USER-Desktop-EPSI-HL\\assets\\c__Users_USER_AppData_Roaming_Cursor_User_workspaceStorage_2953832e4e78b1ccf91a90b2c4f59f3b_images_logoCompleto-9ef6fb6d-b4e1-4be4-880e-e521e3dad28c.png",
+].filter(Boolean);
+const WATERMARK_LOGO_PATHS = [
+  process.env.WATERMARK_LOGO_PATH,
+  path.join(ASSETS_DIR, "epsi-hl-icon.png"),
+  path.join(ASSETS_DIR, "epsi-hl-logo.png"),
+  "C:\\Users\\USER\\.cursor\\projects\\c-Users-USER-Desktop-EPSI-HL\\assets\\c__Users_USER_AppData_Roaming_Cursor_User_workspaceStorage_2953832e4e78b1ccf91a90b2c4f59f3b_images_epsi-hl-logo-9c98b7fc-db60-42dd-b01e-c12b02ed3d97.png",
+].filter(Boolean);
 
 const PAGE_WIDTH = 612; // 8.5in
 const PAGE_HEIGHT = 792; // 11in
@@ -23,6 +34,17 @@ function drawBox(doc, x, y, w, h) {
   doc.rect(x, y, w, h).stroke(COLORS.blue);
 }
 
+function textCenteredInRow(doc, text, x, y, height, options = {}) {
+  const fontSize = doc._fontSize || 9;
+  const textY = y + (height - fontSize) / 2;
+  doc.text(text, x, textY, options);
+}
+
+function drawPageBorder(doc) {
+  const inset = 14;
+  doc.rect(inset, inset, PAGE_WIDTH - inset * 2, PAGE_HEIGHT - inset * 2).stroke(COLORS.blue);
+}
+
 function drawWatermark(doc, text) {
   const centerX = PAGE_WIDTH / 2;
   const centerY = PAGE_HEIGHT / 2;
@@ -38,6 +60,26 @@ function drawWatermark(doc, text) {
   doc.opacity(1);
 }
 
+function drawLogoWatermark(doc, logoPath) {
+  if (!logoPath) return;
+  const centerX = PAGE_WIDTH / 2;
+  const centerY = PAGE_HEIGHT / 2;
+  const width = 260;
+  const height = 260;
+  doc.save();
+  doc.opacity(0.12);
+  try {
+    doc.image(logoPath, centerX - width / 2, centerY - height / 2, {
+      width,
+      height,
+    });
+  } catch (error) {
+    // If logo fails, skip watermark silently.
+  }
+  doc.restore();
+  doc.opacity(1);
+}
+
 function drawHeader(doc, remision, logoPath) {
   const left = MARGIN;
   const top = MARGIN;
@@ -46,7 +88,7 @@ function drawHeader(doc, remision, logoPath) {
   let logoDrawn = false;
   if (logoPath) {
     try {
-      doc.image(logoPath, left, top - 2, { width: 120 });
+      doc.image(logoPath, left, top + 25, { width: 140 });
       logoDrawn = true;
     } catch (error) {
       logoDrawn = false;
@@ -59,10 +101,10 @@ function drawHeader(doc, remision, logoPath) {
       .text("EPSI HL S.A.S", left + 4, top + 10, { width: 110 });
   }
 
-  const headerTextX = left + 140;
+  const headerTextX = left + 148;
   const headerTextY = top + 4;
   const headerTextWidth = Math.max(200, rightX - headerTextX - 10);
-  doc.fontSize(7.2).fillColor(COLORS.blue);
+  doc.fontSize(7.1).fillColor(COLORS.blue);
   const headerLines = [
     "EMPRESA PRESTADORA DE SERVICIOS INTEGRALES HL S.A.S",
     "NIT 900950697 - 3",
@@ -128,8 +170,11 @@ function drawCliente(doc, remision) {
     .text("CLIENTE", left, startY + 3, { align: "center", width });
 
   doc.fillColor(COLORS.black).fontSize(9);
+  const nitLabel = remision.cliente.dv
+    ? `${remision.cliente.nit}-${remision.cliente.dv}`
+    : remision.cliente.nit;
   const labels = [
-    ["C.C./NIT:", remision.cliente.nit],
+    ["C.C./NIT:", nitLabel],
     ["NOMBRE/RAZON SOCIAL:", remision.cliente.nombre],
     ["DIRECCION:", remision.cliente.direccion],
     ["CIUDAD:", remision.cliente.ciudad || ""],
@@ -142,11 +187,13 @@ function drawCliente(doc, remision) {
     const lineY = rowTop + i * rowHeight;
     doc.moveTo(left, lineY).lineTo(left + width, lineY).stroke(COLORS.blue);
   }
+  const separatorX = left + 160;
+  doc.moveTo(separatorX, rowTop).lineTo(separatorX, startY + 90).stroke(COLORS.blue);
 
   let y = startY + 20;
   labels.forEach(([label, value]) => {
-    doc.text(label, left + 6, y + 2);
-    doc.text(value, left + 170, y + 2, { width: 360 });
+    textCenteredInRow(doc, label, left + 6, y, rowHeight);
+    textCenteredInRow(doc, value, left + 170, y, rowHeight, { width: 360 });
     y += rowHeight;
   });
 }
@@ -173,19 +220,26 @@ function drawItems(doc, remision) {
     .fill(COLORS.blue)
     .stroke(COLORS.blue);
   doc.fillColor("white").fontSize(9);
-  doc.text("CANTIDAD", left, top + 3, { width: columns.cantidad, align: "center" });
-  doc.text("DESCRIPCION", left + columns.cantidad, top + 3, {
+  textCenteredInRow(doc, "CANTIDAD", left, top, 16, { width: columns.cantidad, align: "center" });
+  textCenteredInRow(doc, "DESCRIPCION", left + columns.cantidad, top, 16, {
     width: columns.descripcion,
     align: "center",
   });
-  doc.text("PRECIO UNITARIO", left + columns.cantidad + columns.descripcion, top + 3, {
+  textCenteredInRow(doc, "PRECIO UNITARIO", left + columns.cantidad + columns.descripcion, top, 16, {
     width: columns.unitario,
     align: "center",
   });
-  doc.text("PRECIO TOTAL", left + columns.cantidad + columns.descripcion + columns.unitario, top + 3, {
-    width: columns.total,
-    align: "center",
-  });
+  textCenteredInRow(
+    doc,
+    "PRECIO TOTAL",
+    left + columns.cantidad + columns.descripcion + columns.unitario,
+    top,
+    16,
+    {
+      width: columns.total,
+      align: "center",
+    },
+  );
 
   const rowY = top + 20;
   for (let i = 1; i < rows; i += 1) {
@@ -205,19 +259,35 @@ function drawItems(doc, remision) {
 
   doc.fontSize(9).fillColor(COLORS.black);
   remision.items.forEach((item, index) => {
-    const y = rowY + index * rowHeight + 4;
-    doc.text(String(item.cantidad), left + 4, y, { width: columns.cantidad - 8 });
-    doc.text(item.descripcion, left + columns.cantidad + 4, y, {
+    const y = rowY + index * rowHeight;
+    textCenteredInRow(doc, String(item.cantidad), left + 4, y, rowHeight, {
+      width: columns.cantidad - 8,
+    });
+    textCenteredInRow(doc, item.descripcion, left + columns.cantidad + 4, y, rowHeight, {
       width: columns.descripcion - 8,
     });
-    doc.text(formatCurrency(item.valorUnitario), left + columns.cantidad + columns.descripcion + 4, y, {
-      width: columns.unitario - 8,
-      align: "right",
-    });
-    doc.text(formatCurrency(item.subtotal), left + columns.cantidad + columns.descripcion + columns.unitario + 4, y, {
-      width: columns.total - 8,
-      align: "right",
-    });
+    textCenteredInRow(
+      doc,
+      formatCurrency(item.valorUnitario),
+      left + columns.cantidad + columns.descripcion + 4,
+      y,
+      rowHeight,
+      {
+        width: columns.unitario - 8,
+        align: "right",
+      },
+    );
+    textCenteredInRow(
+      doc,
+      formatCurrency(item.subtotal),
+      left + columns.cantidad + columns.descripcion + columns.unitario + 4,
+      y,
+      rowHeight,
+      {
+        width: columns.total - 8,
+        align: "right",
+      },
+    );
   });
 }
 
@@ -226,10 +296,8 @@ function drawPagoFirma(doc, remision, logoPath) {
   const top = 430;
 
   drawBox(doc, left, top, 330, 60);
-  doc
-    .fontSize(9)
-    .fillColor(COLORS.blue)
-    .text("MEDIO DE PAGO:", left + 6, top + 6);
+  doc.fontSize(9).fillColor(COLORS.blue);
+  textCenteredInRow(doc, "MEDIO DE PAGO:", left + 6, top, 60);
 
   const opciones = [
     { label: "Efectivo", key: "efectivo" },
@@ -247,11 +315,11 @@ function drawPagoFirma(doc, remision, logoPath) {
     drawBox(doc, optionsLeft, y - 2, optionWidth, rowHeight);
     drawBox(doc, optionsLeft + optionWidth, y - 2, checkWidth, rowHeight);
     const marcado = remision.metodoPago.toLowerCase() === opt.key;
-    const textY = y + 3;
-    doc.fillColor(COLORS.black).text(opt.label, optionsLeft + 6, textY, {
+    doc.fillColor(COLORS.black);
+    textCenteredInRow(doc, opt.label, optionsLeft + 6, y - 2, rowHeight, {
       width: optionWidth - 12,
     });
-    doc.text(marcado ? "X" : "", optionsLeft + optionWidth, textY, {
+    textCenteredInRow(doc, marcado ? "X" : "", optionsLeft + optionWidth, y - 2, rowHeight, {
       width: checkWidth,
       align: "center",
     });
@@ -259,15 +327,15 @@ function drawPagoFirma(doc, remision, logoPath) {
   });
 
   drawBox(doc, left, top + 70, 330, 60);
-  doc
-    .fontSize(9)
-    .fillColor(COLORS.blue)
-    .text("RECIBE CONFORME:", left + 6, top + 76);
-  doc.moveTo(left + 90, top + 110).lineTo(left + 300, top + 110).stroke(COLORS.blue);
-  doc
-    .fontSize(8)
-    .fillColor(COLORS.gray)
-    .text("Recibe Conforme", left + 110, top + 114);
+  doc.fontSize(9).fillColor(COLORS.blue);
+  textCenteredInRow(doc, "RECIBE CONFORME:", left + 6, top + 70, 60);
+  const lineY = top + 110;
+  doc.moveTo(left + 90, lineY).lineTo(left + 300, lineY).stroke(COLORS.blue);
+  doc.fontSize(8).fillColor(COLORS.gray);
+  textCenteredInRow(doc, "Recibe Conforme", left + 110, lineY + 2, 12, {
+    width: 170,
+    align: "center",
+  });
 
   // Marca de agua deshabilitada por solicitud
 }
@@ -276,16 +344,18 @@ function drawTotales(doc, remision) {
   const left = PAGE_WIDTH - MARGIN - 180;
   const top = 470;
   drawBox(doc, left, top, 180, 70);
+  const separatorX = left + 100;
+  doc.moveTo(separatorX, top).lineTo(separatorX, top + 70).stroke(COLORS.blue);
   const rows = [
     ["Sub - Total", formatCurrency(remision.subtotal)],
     [`IVA (${remision.ivaPorcentaje} %)`, formatCurrency(remision.iva)],
     ["Total", formatCurrency(remision.total)],
   ];
-  let y = top + 6;
+  let y = top;
   rows.forEach(([label, value], index) => {
     doc.fontSize(9).fillColor(COLORS.black);
-    doc.text(label, left + 8, y, { width: 90 });
-    doc.text(value, left + 100, y, { width: 70, align: "right" });
+    textCenteredInRow(doc, label, left + 8, y, 20, { width: 90 });
+    textCenteredInRow(doc, value, left + 100, y, 20, { width: 70, align: "right" });
     if (index < rows.length - 1) {
       doc.moveTo(left, y + 16).lineTo(left + 180, y + 16).stroke(COLORS.blue);
     }
@@ -313,21 +383,19 @@ function formatCurrency(value) {
   return `$ ${number.toLocaleString("es-CO")}`;
 }
 
-async function getLogoPath() {
-  if (!fs.existsSync(LOGO_PATH)) {
-    return null;
-  }
+async function getLogoImage(paths, width) {
+  const sourcePath = paths.find((logoPath) => fs.existsSync(logoPath)) || null;
+  if (!sourcePath) return null;
 
   try {
-    const outputPath = path.join(ASSETS_DIR, "epsi-hl-logo-render.png");
-    await sharp(LOGO_PATH)
-      .resize({ width: 120 })
+    const buffer = await sharp(sourcePath)
+      .resize({ width })
       .flatten({ background: "#ffffff" })
       .png()
-      .toFile(outputPath);
-    return outputPath;
+      .toBuffer();
+    return buffer;
   } catch (error) {
-    return LOGO_PATH;
+    return sourcePath;
   }
 }
 
@@ -340,12 +408,17 @@ async function generateRemisionPdf(remision) {
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
 
-    getLogoPath()
-      .then((logoPath) => {
-        drawHeader(doc, remision, logoPath);
+    Promise.all([
+      getLogoImage(HEADER_LOGO_PATHS, 210),
+      getLogoImage(WATERMARK_LOGO_PATHS, 260),
+    ])
+      .then(([headerLogo, watermarkLogo]) => {
+        drawPageBorder(doc);
+        drawLogoWatermark(doc, watermarkLogo);
+        drawHeader(doc, remision, headerLogo);
         drawCliente(doc, remision);
         drawItems(doc, remision);
-        drawPagoFirma(doc, remision, logoPath);
+        drawPagoFirma(doc, remision, headerLogo);
         drawTotales(doc, remision);
         drawFooter(doc, remision);
         if (remision.anulada) {

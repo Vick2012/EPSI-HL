@@ -159,6 +159,9 @@ app.innerHTML = `
             <label>NIT / C.C.
               <input id="cliente-nit" type="text" placeholder="NIT / C.C." />
             </label>
+            <label>DV
+              <input id="cliente-dv" type="text" placeholder="DV" readonly />
+            </label>
             <label>Tipo de documento
               <select id="cliente-tipo">
                 <option value="CC">Cédula de ciudadanía (CC)</option>
@@ -201,7 +204,7 @@ app.innerHTML = `
               <select id="remision-pago">
                 <option value="efectivo">Efectivo</option>
                 <option value="nequi">Efectivo - Nequi</option>
-                <option value="bancolombia">Transferencia - BanColombia</option>
+                <option value="bancolombia">Transferencia - Bancolombia</option>
               </select>
             </label>
             <label>Total
@@ -258,10 +261,12 @@ app.innerHTML = `
             </label>
             <label>Rol
               <select id="user-role">
-                <option value="EMPLEADO">EMPLEADO</option>
-                <option value="SUPERVISOR">SUPERVISOR</option>
-                <option value="GERENTE">GERENTE</option>
-                <option value="ADMIN">ADMIN</option>
+                <option value="GERENCIAL">GERENCIAL</option>
+                <option value="DIRECCIÓN">DIRECCIÓN</option>
+                <option value="SUPERVISIÓN">SUPERVISIÓN</option>
+                <option value="ASISTENTE">ASISTENTE</option>
+                <option value="APOYO">APOYO</option>
+                <option value="AUXILIARES">AUXILIARES</option>
               </select>
             </label>
             <label>Contraseña
@@ -307,6 +312,7 @@ const fechaEl = app.querySelector<HTMLDivElement>("#remision-fecha")!;
 const clienteStatusEl = app.querySelector<HTMLSpanElement>("#cliente-status")!;
 const guardarClienteBtn = app.querySelector<HTMLButtonElement>("#guardar-cliente")!;
 const clienteNitInput = app.querySelector<HTMLInputElement>("#cliente-nit")!;
+const clienteDvInput = app.querySelector<HTMLInputElement>("#cliente-dv")!;
 const clienteTipoSelect = app.querySelector<HTMLSelectElement>("#cliente-tipo")!;
 const clienteNombreInput = app.querySelector<HTMLInputElement>("#cliente-nombre")!;
 const clienteDireccionInput = app.querySelector<HTMLInputElement>("#cliente-direccion")!;
@@ -501,11 +507,32 @@ const updateFechaHora = () => {
 
 type Cliente = {
   nit: string;
+  dv?: string;
   tipoDocumento?: string;
   nombre?: string;
   direccion?: string;
   ciudad?: string;
   telefono?: string;
+};
+
+const calcularDv = (nit: string) => {
+  const digits = nit.replace(/\D/g, "");
+  if (!digits) return "";
+  const factors = [3, 7, 13, 17, 19, 23, 29, 37, 41, 43, 47, 53, 59, 67, 71];
+  let sum = 0;
+  const reversed = digits.split("").reverse();
+  reversed.forEach((digit, index) => {
+    const factor = factors[index] ?? 0;
+    sum += Number(digit) * factor;
+  });
+  const residue = sum % 11;
+  const dv = residue > 1 ? 11 - residue : residue;
+  return String(dv);
+};
+
+const actualizarDv = () => {
+  const nit = clienteNitInput.value.trim();
+  clienteDvInput.value = calcularDv(nit);
 };
 
 const getClientes = (): Cliente[] => {
@@ -533,6 +560,7 @@ const llenarCliente = (cliente: Record<string, string>) => {
   clienteDireccionInput.value = cliente.direccion || "";
   clienteCiudadInput.value = cliente.ciudad || "";
   clienteTelefonoInput.value = cliente.telefono || "";
+  clienteDvInput.value = cliente.dv || calcularDv(clienteNitInput.value);
 };
 
 const limpiarCliente = () => {
@@ -540,10 +568,16 @@ const limpiarCliente = () => {
   clienteDireccionInput.value = "";
   clienteCiudadInput.value = "";
   clienteTelefonoInput.value = "";
+  clienteDvInput.value = "";
 };
+
+clienteNitInput.addEventListener("input", () => {
+  actualizarDv();
+});
 
 clienteNitInput.addEventListener("blur", () => {
   const nit = clienteNitInput.value.trim();
+  actualizarDv();
   if (!nit) return;
   const cliente = buscarCliente(nit);
   if (cliente) {
@@ -561,8 +595,10 @@ guardarClienteBtn.addEventListener("click", () => {
     clienteStatusEl.textContent = "Ingresa el NIT para guardar.";
     return;
   }
+  actualizarDv();
   const cliente = {
     nit,
+    dv: clienteDvInput.value.trim(),
     tipoDocumento: clienteTipoSelect.value,
     nombre: clienteNombreInput.value.trim(),
     direccion: clienteDireccionInput.value.trim(),
@@ -700,6 +736,7 @@ app.querySelector("#generar")!.addEventListener("click", async () => {
     cliente: {
       nombre: app.querySelector<HTMLInputElement>("#cliente-nombre")!.value || "",
       nit: app.querySelector<HTMLInputElement>("#cliente-nit")!.value || "",
+      dv: app.querySelector<HTMLInputElement>("#cliente-dv")!.value || "",
       tipoDocumento: app.querySelector<HTMLSelectElement>("#cliente-tipo")!.value || "",
       direccion: app.querySelector<HTMLInputElement>("#cliente-direccion")!.value || "",
       ciudad: app.querySelector<HTMLInputElement>("#cliente-ciudad")!.value || "",

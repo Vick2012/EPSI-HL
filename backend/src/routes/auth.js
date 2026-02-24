@@ -7,22 +7,33 @@ const nodemailer = require("nodemailer");
 
 const router = express.Router();
 
-const JWT_SECRET = process.env.JWT_SECRET || "epsi-hl-secret";
+const JWT_SECRET =
+  process.env.JWT_SECRET || (process.env.NODE_ENV === "development" ? "epsi-hl-secret" : null);
+
+function getJwtSecret() {
+  if (!JWT_SECRET) {
+    throw new Error("JWT_SECRET no configurado.");
+  }
+  return JWT_SECRET;
+}
 
 function signToken(user) {
-  return jwt.sign({ sub: user.id, email: user.email, role: user.role }, JWT_SECRET, {
+  return jwt.sign({ sub: user.id, email: user.email, role: user.role }, getJwtSecret(), {
     expiresIn: "8h",
   });
 }
 
 function authMiddleware(req, res, next) {
+  if (!JWT_SECRET && process.env.NODE_ENV !== "development") {
+    return res.status(500).json({ ok: false, message: "JWT_SECRET no configurado" });
+  }
   const auth = req.headers.authorization || "";
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
   if (!token) {
     return res.status(401).json({ ok: false, message: "Token requerido" });
   }
   try {
-    const payload = jwt.verify(token, JWT_SECRET);
+    const payload = jwt.verify(token, getJwtSecret());
     req.user = payload;
     return next();
   } catch (error) {
@@ -53,6 +64,9 @@ router.post("/login", async (req, res) => {
   const ok = await bcrypt.compare(password, user.password_hash);
   if (!ok) {
     return res.status(401).json({ ok: false, message: "Credenciales inválidas" });
+  }
+  if (!JWT_SECRET && process.env.NODE_ENV !== "development") {
+    return res.status(500).json({ ok: false, message: "JWT_SECRET no configurado" });
   }
   const token = signToken(user);
   return res.json({ ok: true, token, role: user.role, email: user.email, name: user.name });
@@ -102,11 +116,14 @@ router.post("/request-reset", async (req, res) => {
   }
 
   // Para entorno de desarrollo devolvemos el token
-  return res.json({
+  const response = {
     ok: true,
     message: "Si el correo existe, recibirás un enlace.",
-    devToken: rawToken,
-  });
+  };
+  if (process.env.NODE_ENV === "development") {
+    response.devToken = rawToken;
+  }
+  return res.json(response);
 });
 
 router.post("/reset-password", async (req, res) => {

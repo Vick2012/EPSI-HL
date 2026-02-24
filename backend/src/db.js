@@ -33,19 +33,23 @@ async function initDb(db) {
     );
   `);
 
-  const adminEmails = ["admin@epsihl.com", "admin@epsihl.com.co"];
-  for (const adminEmail of adminEmails) {
-    const existing = await db.get("SELECT id FROM users WHERE email = ?", adminEmail);
-    if (!existing) {
-      const passwordHash = await bcrypt.hash("Admin123!", 10);
-      await db.run(
-        "INSERT INTO users (email, password_hash, role, name, created_at) VALUES (?, ?, ?, ?, ?)",
-        adminEmail,
-        passwordHash,
-        "ADMIN",
-        "Administrador",
-        new Date().toISOString()
-      );
+  const adminDefaultPassword =
+    process.env.ADMIN_DEFAULT_PASSWORD || (process.env.NODE_ENV === "development" ? "Admin123!" : null);
+  if (adminDefaultPassword) {
+    const adminEmails = ["admin@epsihl.com", "admin@epsihl.com.co"];
+    for (const adminEmail of adminEmails) {
+      const existing = await db.get("SELECT id FROM users WHERE email = ?", adminEmail);
+      if (!existing) {
+        const passwordHash = await bcrypt.hash(adminDefaultPassword, 10);
+        await db.run(
+          "INSERT INTO users (email, password_hash, role, name, created_at) VALUES (?, ?, ?, ?, ?)",
+          adminEmail,
+          passwordHash,
+          "ADMIN",
+          "Administrador",
+          new Date().toISOString()
+        );
+      }
     }
   }
 }
