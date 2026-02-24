@@ -33,6 +33,34 @@ async function initDb(db) {
     );
   `);
 
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS remisiones (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      numero TEXT UNIQUE NOT NULL,
+      data_json TEXT NOT NULL,
+      usuario TEXT,
+      anulada INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+  `);
+
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS clientes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      tipo_documento TEXT,
+      numero_documento TEXT UNIQUE NOT NULL,
+      dv TEXT,
+      nombre TEXT,
+      ciudad TEXT,
+      direccion TEXT,
+      telefono TEXT,
+      email TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+  `);
+
   const adminDefaultPassword =
     process.env.ADMIN_DEFAULT_PASSWORD || (process.env.NODE_ENV === "development" ? "Admin123!" : null);
   if (adminDefaultPassword) {
@@ -45,12 +73,56 @@ async function initDb(db) {
           "INSERT INTO users (email, password_hash, role, name, created_at) VALUES (?, ?, ?, ?, ?)",
           adminEmail,
           passwordHash,
-          "ADMIN",
-          "Administrador",
+          "GERENCIAL",
+          "Gerencia",
           new Date().toISOString()
         );
       }
     }
+    await db.run(
+      "UPDATE users SET role = 'GERENCIAL' WHERE email IN ('admin@epsihl.com', 'admin@epsihl.com.co')"
+    );
+  }
+}
+
+async function importClientesFromCsv(db, csvPath) {
+  if (!csvPath || !fs.existsSync(csvPath)) return;
+  const countRow = await db.get("SELECT COUNT(*) as total FROM clientes");
+  if (countRow?.total > 0) return;
+
+  const raw = fs.readFileSync(csvPath, "utf-8");
+  const lines = raw.split(/\r?\n/).filter(Boolean);
+  if (lines.length <= 1) return;
+
+  const now = new Date().toISOString();
+  const [, ...rows] = lines;
+  for (const line of rows) {
+    const parts = line.split(";");
+    if (parts.length < 8) continue;
+    const [
+      tipoDocumento,
+      numeroDocumento,
+      dv,
+      nombre,
+      ciudad,
+      direccion,
+      telefono,
+      email,
+    ] = parts.map((p) => p.trim());
+    if (!numeroDocumento) continue;
+    await db.run(
+      "INSERT OR IGNORE INTO clientes (tipo_documento, numero_documento, dv, nombre, ciudad, direccion, telefono, email, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      tipoDocumento || null,
+      numeroDocumento,
+      dv || null,
+      nombre || null,
+      ciudad || null,
+      direccion || null,
+      telefono || null,
+      email || null,
+      now,
+      now
+    );
   }
 }
 
@@ -64,6 +136,7 @@ async function getDb() {
       driver: sqlite3.Database,
     });
     await initDb(dbInstance);
+    await importClientesFromCsv(dbInstance, process.env.CLIENTES_CSV_PATH);
   }
   return dbInstance;
 }

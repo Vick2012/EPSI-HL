@@ -50,6 +50,16 @@ function requireRole(role) {
   };
 }
 
+function requireAnyRole(roles) {
+  const allowed = Array.isArray(roles) ? roles : [];
+  return (req, res, next) => {
+    if (!req.user?.role || !allowed.includes(req.user.role)) {
+      return res.status(403).json({ ok: false, message: "Acceso denegado" });
+    }
+    return next();
+  };
+}
+
 router.post("/login", async (req, res) => {
   const { email, password } = req.body || {};
   const normalizedEmail = String(email || "").trim().toLowerCase();
@@ -153,4 +163,5 @@ module.exports = {
   authRouter: router,
   authMiddleware,
   requireRole,
+  requireAnyRole,
 };

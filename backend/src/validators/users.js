@@ -1,6 +1,6 @@
 const { z } = require("zod");
 
-const roleSchema = z.enum(["ADMIN", "GERENTE", "EMPLEADO"]);
+const roleSchema = z.enum(["GERENCIAL", "DIRECCION", "SUPERVISION", "ASISTENTE", "APOYO", "AUXILIARES"]);
 
 const createUserSchema = z.object({
   email: z.string().email(),

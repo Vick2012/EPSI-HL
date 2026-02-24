@@ -153,6 +153,19 @@ app.innerHTML = `
       </section>
 
       <section id="remision-view" class="hidden">
+        <section id="remision-buscar" class="card hidden">
+          <h2>Buscar remisión</h2>
+          <div class="form-grid">
+            <label>Número de remisión
+              <input id="buscar-remision-numero" type="text" placeholder="RM 001" />
+            </label>
+          </div>
+          <div class="client-actions">
+            <button id="buscar-remision" class="secondary" type="button">Buscar</button>
+            <button id="cancelar-edicion-remision" class="secondary hidden" type="button">Cancelar edición</button>
+            <span id="buscar-remision-status" class="status"></span>
+          </div>
+        </section>
         <section class="card">
           <h2>Datos del cliente</h2>
           <div class="form-grid">
@@ -244,6 +257,7 @@ app.innerHTML = `
             <div>Subtotal: <span id="subtotal">$ 0</span></div>
             <div>Total: <span id="total">$ 0</span></div>
           </div>
+          <button id="guardar-remision" class="secondary hidden" type="button">Guardar cambios</button>
           <button id="generar" class="primary">Generar PDF</button>
           <div id="status" class="status"></div>
         </section>
@@ -262,8 +276,8 @@ app.innerHTML = `
             <label>Rol
               <select id="user-role">
                 <option value="GERENCIAL">GERENCIAL</option>
-                <option value="DIRECCIÓN">DIRECCIÓN</option>
-                <option value="SUPERVISIÓN">SUPERVISIÓN</option>
+                <option value="DIRECCION">DIRECCIÓN</option>
+                <option value="SUPERVISION">SUPERVISIÓN</option>
                 <option value="ASISTENTE">ASISTENTE</option>
                 <option value="APOYO">APOYO</option>
                 <option value="AUXILIARES">AUXILIARES</option>
@@ -275,6 +289,7 @@ app.innerHTML = `
           </div>
           <div class="client-actions">
             <button id="user-create" class="primary">Crear usuario</button>
+            <button id="user-cancel" class="secondary hidden" type="button">Cancelar edición</button>
             <span id="users-status" class="status"></span>
           </div>
         </section>
@@ -308,7 +323,14 @@ const itemsTable = app.querySelector<HTMLDivElement>(".items-table")!;
 const subtotalEl = app.querySelector<HTMLSpanElement>("#subtotal")!;
 const totalEl = app.querySelector<HTMLSpanElement>("#total")!;
 const statusEl = app.querySelector<HTMLDivElement>("#status")!;
+const generarBtn = app.querySelector<HTMLButtonElement>("#generar")!;
 const fechaEl = app.querySelector<HTMLDivElement>("#remision-fecha")!;
+const buscarRemisionSection = app.querySelector<HTMLDivElement>("#remision-buscar")!;
+const buscarRemisionNumeroInput = app.querySelector<HTMLInputElement>("#buscar-remision-numero")!;
+const buscarRemisionBtn = app.querySelector<HTMLButtonElement>("#buscar-remision")!;
+const cancelarEdicionRemisionBtn = app.querySelector<HTMLButtonElement>("#cancelar-edicion-remision")!;
+const buscarRemisionStatus = app.querySelector<HTMLSpanElement>("#buscar-remision-status")!;
+const guardarRemisionBtn = app.querySelector<HTMLButtonElement>("#guardar-remision")!;
 const clienteStatusEl = app.querySelector<HTMLSpanElement>("#cliente-status")!;
 const guardarClienteBtn = app.querySelector<HTMLButtonElement>("#guardar-cliente")!;
 const clienteNitInput = app.querySelector<HTMLInputElement>("#cliente-nit")!;
@@ -327,6 +349,9 @@ const userEmailInput = app.querySelector<HTMLInputElement>("#user-email")!;
 const userRoleSelect = app.querySelector<HTMLSelectElement>("#user-role")!;
 const userPasswordInput = app.querySelector<HTMLInputElement>("#user-password")!;
 const userCreateBtn = app.querySelector<HTMLButtonElement>("#user-create")!;
+const userCancelBtn = app.querySelector<HTMLButtonElement>("#user-cancel")!;
+let editingUserId: string | null = null;
+let editingRemisionNumero: string | null = null;
 const usersStatus = app.querySelector<HTMLSpanElement>("#users-status")!;
 const usersList = app.querySelector<HTMLDivElement>("#users-list")!;
 const loginModal = app.querySelector<HTMLDivElement>("#login-modal")!;
@@ -351,10 +376,16 @@ let pendingAction: null | (() => void) = null;
 
 const logoImg = app.querySelector<HTMLImageElement>("#brand-logo")!;
 const logoBase = `${window.location.protocol}//${window.location.hostname}:3001`;
-logoImg.src = "/epsi-hl-logo.png";
+const logoSources = [
+  `${logoBase}/assets/Icono.png`,
+  "/Icono.png",
+];
+let logoIndex = 0;
+logoImg.src = logoSources[logoIndex];
 logoImg.addEventListener("error", () => {
-  if (logoImg.src.includes("/epsi-hl-logo.png")) {
-    logoImg.src = `${logoBase}/assets/epsi-hl-logo.png`;
+  logoIndex += 1;
+  if (logoIndex < logoSources.length) {
+    logoImg.src = logoSources[logoIndex];
     return;
   }
   logoImg.style.display = "none";
@@ -383,10 +414,14 @@ const closeLogin = () => {
 };
 
 const applyRole = (role: string | null) => {
-  const isAdmin = role === "ADMIN";
-  remisionNumeroInput.readOnly = !isAdmin;
-  remisionAnuladaWrap.classList.toggle("hidden", !isAdmin);
-  if (!isAdmin) {
+  const isGerencial = role === "GERENCIAL";
+  const isEditing = Boolean(editingRemisionNumero);
+  remisionNumeroInput.readOnly = !isGerencial || isEditing;
+  remisionAnuladaWrap.classList.toggle("hidden", !isGerencial);
+  buscarRemisionSection.classList.toggle("hidden", !isGerencial);
+  guardarRemisionBtn.classList.toggle("hidden", !isGerencial || !isEditing);
+  cancelarEdicionRemisionBtn.classList.toggle("hidden", !isGerencial || !isEditing);
+  if (!isGerencial) {
     remisionAnuladaInput.checked = false;
   }
 };
@@ -535,23 +570,36 @@ const actualizarDv = () => {
   clienteDvInput.value = calcularDv(nit);
 };
 
-const getClientes = (): Cliente[] => {
-  const raw = window.localStorage.getItem("epsiClientes");
-  if (!raw) return [];
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return [];
-  }
+const fetchCliente = async (nit: string) => {
+  const token = window.localStorage.getItem("epsiToken");
+  if (!token) return null;
+  const response = await fetch(`http://localhost:3001/clientes/${encodeURIComponent(nit)}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) return null;
+  const data = await response.json();
+  return data.cliente as Cliente;
 };
 
-const saveClientes = (clientes: Cliente[]) => {
-  window.localStorage.setItem("epsiClientes", JSON.stringify(clientes));
-};
-
-const buscarCliente = (nit: string) => {
-  const clientes = getClientes();
-  return clientes.find((c: Cliente) => c.nit === nit);
+const saveClienteDb = async (cliente: Cliente) => {
+  const token = window.localStorage.getItem("epsiToken");
+  if (!token) return false;
+  const payload = {
+    tipo_documento: cliente.tipoDocumento || null,
+    numero_documento: cliente.nit,
+    dv: cliente.dv || null,
+    nombre: cliente.nombre || null,
+    ciudad: cliente.ciudad || null,
+    direccion: cliente.direccion || null,
+    telefono: cliente.telefono || null,
+    email: "",
+  };
+  const response = await fetch("http://localhost:3001/clientes", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(payload),
+  });
+  return response.ok;
 };
 
 const llenarCliente = (cliente: Record<string, string>) => {
@@ -575,11 +623,11 @@ clienteNitInput.addEventListener("input", () => {
   actualizarDv();
 });
 
-clienteNitInput.addEventListener("blur", () => {
+clienteNitInput.addEventListener("blur", async () => {
   const nit = clienteNitInput.value.trim();
   actualizarDv();
   if (!nit) return;
-  const cliente = buscarCliente(nit);
+  const cliente = await fetchCliente(nit);
   if (cliente) {
     llenarCliente(cliente);
     clienteStatusEl.textContent = "Cliente encontrado y cargado.";
@@ -589,7 +637,7 @@ clienteNitInput.addEventListener("blur", () => {
   }
 });
 
-guardarClienteBtn.addEventListener("click", () => {
+guardarClienteBtn.addEventListener("click", async () => {
   const nit = clienteNitInput.value.trim();
   if (!nit) {
     clienteStatusEl.textContent = "Ingresa el NIT para guardar.";
@@ -605,15 +653,10 @@ guardarClienteBtn.addEventListener("click", () => {
     ciudad: clienteCiudadInput.value.trim(),
     telefono: clienteTelefonoInput.value.trim(),
   };
-  const clientes = getClientes();
-  const existingIndex = clientes.findIndex((c: Record<string, string>) => c.nit === nit);
-  if (existingIndex >= 0) {
-    clientes[existingIndex] = cliente;
-  } else {
-    clientes.push(cliente);
-  }
-  saveClientes(clientes);
-  clienteStatusEl.textContent = "Cliente guardado correctamente.";
+  const ok = await saveClienteDb(cliente);
+  clienteStatusEl.textContent = ok
+    ? "Cliente guardado correctamente."
+    : "No se pudo guardar el cliente.";
 });
 const goRemisiones = () => {
   homeView.classList.add("hidden");
@@ -684,7 +727,37 @@ const recalc = () => {
   totalEl.textContent = formatCurrency(total);
 };
 
-const addItemRow = () => {
+const resetItemsTable = () => {
+  const header = itemsTable.querySelector(".items-header");
+  itemsTable.innerHTML = "";
+  if (header) {
+    itemsTable.appendChild(header);
+  }
+};
+
+const setItemsFromRemision = (items: Array<{ cantidad: number; descripcion: string; valorUnitario: number; subtotal: number }>) => {
+  resetItemsTable();
+  if (!items || items.length === 0) {
+    addItemRow();
+  } else {
+    items.forEach((item) => addItemRow(item));
+  }
+  recalc();
+};
+
+const enterEditMode = (numero: string) => {
+  editingRemisionNumero = numero;
+  generarBtn.disabled = true;
+  applyRole(window.localStorage.getItem("epsiRole"));
+};
+
+const exitEditMode = () => {
+  editingRemisionNumero = null;
+  generarBtn.disabled = false;
+  applyRole(window.localStorage.getItem("epsiRole"));
+};
+
+const addItemRow = (item?: { cantidad?: number; descripcion?: string; valorUnitario?: number; subtotal?: number }) => {
   const row = document.createElement("div");
   row.className = "items-row";
   row.innerHTML = `
@@ -693,6 +766,12 @@ const addItemRow = () => {
     <input class="item-unitario" type="number" value="0" min="0" />
     <input class="item-subtotal" type="number" value="0" min="0" readonly />
   `;
+  if (item) {
+    (row.querySelector<HTMLInputElement>(".item-cantidad")!).value = String(item.cantidad ?? 1);
+    (row.querySelector<HTMLInputElement>(".item-descripcion")!).value = item.descripcion ?? "";
+    (row.querySelector<HTMLInputElement>(".item-unitario")!).value = String(item.valorUnitario ?? 0);
+    (row.querySelector<HTMLInputElement>(".item-subtotal")!).value = String(item.subtotal ?? 0);
+  }
   itemsTable.appendChild(row);
   row.querySelectorAll("input").forEach((input) => input.addEventListener("input", recalc));
 };
@@ -705,15 +784,56 @@ app.querySelectorAll("input, select").forEach((input) => {
   input.addEventListener("input", recalc);
 });
 
-app.querySelector("#generar")!.addEventListener("click", async () => {
+buscarRemisionBtn.addEventListener("click", async () => {
   const token = window.localStorage.getItem("epsiToken");
   if (!token) {
-    statusEl.textContent = "Debes iniciar sesión para generar remisiones.";
-    openLogin();
+    buscarRemisionStatus.textContent = "Debes iniciar sesión.";
+    openLogin(goRemisiones);
     return;
   }
-  statusEl.textContent = "Generando PDF...";
+  const numero = buscarRemisionNumeroInput.value.trim();
+  if (!numero) {
+    buscarRemisionStatus.textContent = "Ingresa el número de remisión.";
+    return;
+  }
+  buscarRemisionStatus.textContent = "Buscando remisión...";
+  try {
+    const response = await fetch(`http://localhost:3001/remisiones/${encodeURIComponent(numero)}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      const msg = await response.text();
+      buscarRemisionStatus.textContent = msg || "No se pudo encontrar la remisión.";
+      return;
+    }
+    const data = await response.json();
+    const remision = data.remision;
+    remisionNumeroInput.value = remision.numero || numero;
+    remisionAnuladaInput.checked = Boolean(remision.anulada);
+    (app.querySelector<HTMLSelectElement>("#remision-pago")!).value = remision.metodoPago || "efectivo";
+    (app.querySelector<HTMLInputElement>("#remision-observaciones")!).value = remision.observaciones || "";
+    (app.querySelector<HTMLInputElement>("#remision-total")!).value = String(remision.total || 0);
+    clienteNombreInput.value = remision.cliente?.nombre || "";
+    clienteNitInput.value = remision.cliente?.nit || "";
+    clienteDvInput.value = remision.cliente?.dv || "";
+    clienteTipoSelect.value = remision.cliente?.tipoDocumento || "CC";
+    clienteDireccionInput.value = remision.cliente?.direccion || "";
+    clienteCiudadInput.value = remision.cliente?.ciudad || "";
+    clienteTelefonoInput.value = remision.cliente?.telefono || "";
+    setItemsFromRemision(remision.items || []);
+    enterEditMode(numero);
+    buscarRemisionStatus.textContent = "Remisión cargada para edición.";
+  } catch {
+    buscarRemisionStatus.textContent = "Error consultando la remisión.";
+  }
+});
 
+cancelarEdicionRemisionBtn.addEventListener("click", () => {
+  exitEditMode();
+  buscarRemisionStatus.textContent = "Edición cancelada.";
+});
+
+const buildRemisionPayload = (): RemisionPayload => {
   const itemRows = Array.from(app.querySelectorAll<HTMLDivElement>(".items-row"));
   const items = itemRows.map((row) => ({
     cantidad: Number(row.querySelector<HTMLInputElement>(".item-cantidad")!.value || 0),
@@ -727,7 +847,7 @@ app.querySelector("#generar")!.addEventListener("click", async () => {
   const iva = total * (ivaPorcentaje / 100);
   const subtotal = total - iva;
 
-  const payload = {
+  return {
     numero: (app.querySelector<HTMLInputElement>("#remision-numero")!.value || "0001").trim(),
     fecha: new Date().toISOString(),
     metodoPago: app.querySelector<HTMLSelectElement>("#remision-pago")!.value as RemisionPayload["metodoPago"],
@@ -748,6 +868,55 @@ app.querySelector("#generar")!.addEventListener("click", async () => {
     iva,
     total,
   } as RemisionPayload;
+};
+
+guardarRemisionBtn.addEventListener("click", async () => {
+  const token = window.localStorage.getItem("epsiToken");
+  if (!token) {
+    statusEl.textContent = "Debes iniciar sesión para guardar.";
+    openLogin(goRemisiones);
+    return;
+  }
+  if (!editingRemisionNumero) {
+    statusEl.textContent = "No hay remisión en edición.";
+    return;
+  }
+  statusEl.textContent = "Guardando cambios...";
+  try {
+    const payload = buildRemisionPayload();
+    const response = await fetch(`http://localhost:3001/remisiones/${encodeURIComponent(editingRemisionNumero)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const msg = await response.text();
+      statusEl.textContent = msg || "No se pudo guardar la remisión.";
+      return;
+    }
+    const pdfResponse = await fetch(`http://localhost:3001/remisiones/${encodeURIComponent(editingRemisionNumero)}/pdf`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (pdfResponse.ok) {
+      const pdf = await pdfResponse.blob();
+      const url = URL.createObjectURL(pdf);
+      window.open(url, "_blank");
+    }
+    statusEl.textContent = "Remisión actualizada.";
+  } catch {
+    statusEl.textContent = "Error guardando la remisión.";
+  }
+});
+
+app.querySelector("#generar")!.addEventListener("click", async () => {
+  const token = window.localStorage.getItem("epsiToken");
+  if (!token) {
+    statusEl.textContent = "Debes iniciar sesión para generar remisiones.";
+    openLogin();
+    return;
+  }
+  statusEl.textContent = "Generando PDF...";
+  const payload = buildRemisionPayload();
 
   try {
     const pdf = await generarRemisionPdf(payload);
@@ -789,6 +958,7 @@ const loadUsers = async () => {
           <span>${user.role}</span>
           <span>********</span>
           <div class="actions">
+            <button class="secondary" data-edit-user="${user.id}">Modificar</button>
             <button class="secondary" data-reset-user="${user.id}">Reset</button>
             <button class="secondary" data-delete-user="${user.id}">Eliminar</button>
           </div>
@@ -797,6 +967,23 @@ const loadUsers = async () => {
     )
     .join("");
     usersStatus.textContent = "";
+
+    usersList.querySelectorAll("[data-edit-user]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = (btn as HTMLButtonElement).dataset.editUser;
+        if (!id) return;
+        const user = data.users.find((u: any) => String(u.id) === String(id));
+        if (!user) return;
+        editingUserId = String(id);
+        userNameInput.value = user.name || "";
+        userEmailInput.value = user.email || "";
+        userRoleSelect.value = user.role || "GERENCIAL";
+        userPasswordInput.value = "";
+        userCreateBtn.textContent = "Guardar cambios";
+        userCancelBtn.classList.remove("hidden");
+        usersStatus.textContent = "Editando usuario...";
+      });
+    });
 
     usersList.querySelectorAll("[data-reset-user]").forEach((btn) => {
       btn.addEventListener("click", async () => {
@@ -844,36 +1031,63 @@ userCreateBtn.addEventListener("click", async () => {
     openLogin(goUsers);
     return;
   }
-  const payload = {
+  const basePayload = {
     name: userNameInput.value.trim(),
     email: userEmailInput.value.trim(),
     role: userRoleSelect.value,
-    password: userPasswordInput.value,
   };
-  if (!payload.email || !payload.password) {
-    usersStatus.textContent = "Email y contraseña son obligatorios.";
+  const passwordValue = userPasswordInput.value;
+  if (!basePayload.email) {
+    usersStatus.textContent = "Email es obligatorio.";
     return;
   }
-  usersStatus.textContent = "Creando usuario...";
+  const isEditing = Boolean(editingUserId);
+  if (!isEditing && !passwordValue) {
+    usersStatus.textContent = "La contraseña es obligatoria.";
+    return;
+  }
+  const payload = {
+    ...basePayload,
+    ...(passwordValue ? { password: passwordValue } : {}),
+  };
+  usersStatus.textContent = isEditing ? "Guardando cambios..." : "Creando usuario...";
   try {
-    const response = await fetch("http://localhost:3001/users", {
-      method: "POST",
+    const endpoint = isEditing
+      ? `http://localhost:3001/users/${editingUserId}`
+      : "http://localhost:3001/users";
+    const response = await fetch(endpoint, {
+      method: isEditing ? "PUT" : "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify(payload),
     });
     if (!response.ok) {
       const msg = await response.text();
-      usersStatus.textContent = msg || "No se pudo crear el usuario.";
+      usersStatus.textContent = msg || (isEditing ? "No se pudo actualizar el usuario." : "No se pudo crear el usuario.");
       return;
     }
     userNameInput.value = "";
     userEmailInput.value = "";
     userPasswordInput.value = "";
-    usersStatus.textContent = "Usuario creado.";
+    userRoleSelect.value = "GERENCIAL";
+    usersStatus.textContent = isEditing ? "Usuario actualizado." : "Usuario creado.";
+    editingUserId = null;
+    userCreateBtn.textContent = "Crear usuario";
+    userCancelBtn.classList.add("hidden");
     loadUsers();
   } catch {
-    usersStatus.textContent = "Error creando usuario.";
+    usersStatus.textContent = isEditing ? "Error actualizando usuario." : "Error creando usuario.";
   }
+});
+
+userCancelBtn.addEventListener("click", () => {
+  editingUserId = null;
+  userNameInput.value = "";
+  userEmailInput.value = "";
+  userPasswordInput.value = "";
+  userRoleSelect.value = "GERENCIAL";
+  userCreateBtn.textContent = "Crear usuario";
+  userCancelBtn.classList.add("hidden");
+  usersStatus.textContent = "Edición cancelada.";
 });
 
 updateFechaHora();
@@ -899,7 +1113,7 @@ loginForgot.addEventListener("click", () => {
   openReset();
 });
 loginRegister.addEventListener("click", () => {
-  statusEl.textContent = "La creación de usuarios la gestiona el ADMIN.";
+  statusEl.textContent = "La creación de usuarios la gestiona GERENCIAL/DIRECCION/SUPERVISION.";
   closeLogin();
 });
 

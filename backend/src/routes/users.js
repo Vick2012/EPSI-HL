@@ -1,18 +1,20 @@
 const express = require("express");
 const bcrypt = require("bcrypt");
 const { getDb } = require("../db");
-const { authMiddleware, requireRole } = require("./auth");
+const { authMiddleware, requireAnyRole } = require("./auth");
 const { validateUserCreate, validateUserUpdate } = require("../validators/users");
 
 const router = express.Router();
 
-router.get("/", authMiddleware, requireRole("ADMIN"), async (_req, res) => {
+const USER_MANAGEMENT_ROLES = ["GERENCIAL", "DIRECCION", "SUPERVISION"];
+
+router.get("/", authMiddleware, requireAnyRole(USER_MANAGEMENT_ROLES), async (_req, res) => {
   const db = await getDb();
   const users = await db.all("SELECT id, email, role, name, created_at FROM users ORDER BY id DESC");
   return res.json({ ok: true, users });
 });
 
-router.post("/", authMiddleware, requireRole("ADMIN"), async (req, res) => {
+router.post("/", authMiddleware, requireAnyRole(USER_MANAGEMENT_ROLES), async (req, res) => {
   const parse = validateUserCreate(req.body || {});
   if (!parse.ok) {
     return res.status(400).json({ ok: false, errors: parse.errors });
@@ -36,7 +38,7 @@ router.post("/", authMiddleware, requireRole("ADMIN"), async (req, res) => {
   return res.json({ ok: true });
 });
 
-router.put("/:id", authMiddleware, requireRole("ADMIN"), async (req, res) => {
+router.put("/:id", authMiddleware, requireAnyRole(USER_MANAGEMENT_ROLES), async (req, res) => {
   const { id } = req.params;
   const parse = validateUserUpdate(req.body || {});
   if (!parse.ok) {
@@ -66,7 +68,7 @@ router.put("/:id", authMiddleware, requireRole("ADMIN"), async (req, res) => {
   return res.json({ ok: true });
 });
 
-router.delete("/:id", authMiddleware, requireRole("ADMIN"), async (req, res) => {
+router.delete("/:id", authMiddleware, requireAnyRole(USER_MANAGEMENT_ROLES), async (req, res) => {
   const { id } = req.params;
   const db = await getDb();
   const user = await db.get("SELECT id FROM users WHERE id = ?", id);
@@ -77,7 +79,7 @@ router.delete("/:id", authMiddleware, requireRole("ADMIN"), async (req, res) => 
   return res.json({ ok: true });
 });
 
-router.post("/:id/reset", authMiddleware, requireRole("ADMIN"), async (req, res) => {
+router.post("/:id/reset", authMiddleware, requireAnyRole(USER_MANAGEMENT_ROLES), async (req, res) => {
   const { id } = req.params;
   const db = await getDb();
   const user = await db.get("SELECT id, email FROM users WHERE id = ?", id);

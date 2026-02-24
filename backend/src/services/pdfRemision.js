@@ -6,15 +6,11 @@ const sharp = require("sharp");
 const ASSETS_DIR = path.join(__dirname, "..", "..", "assets");
 const HEADER_LOGO_PATHS = [
   process.env.HEADER_LOGO_PATH,
-  path.join(ASSETS_DIR, "epsi-hl-logo-full.png"),
-  path.join(ASSETS_DIR, "epsi-hl-logo.png"),
-  "C:\\Users\\USER\\.cursor\\projects\\c-Users-USER-Desktop-EPSI-HL\\assets\\c__Users_USER_AppData_Roaming_Cursor_User_workspaceStorage_2953832e4e78b1ccf91a90b2c4f59f3b_images_logoCompleto-9ef6fb6d-b4e1-4be4-880e-e521e3dad28c.png",
+  path.join(ASSETS_DIR, "Logo.png"),
 ].filter(Boolean);
 const WATERMARK_LOGO_PATHS = [
   process.env.WATERMARK_LOGO_PATH,
-  path.join(ASSETS_DIR, "epsi-hl-icon.png"),
-  path.join(ASSETS_DIR, "epsi-hl-logo.png"),
-  "C:\\Users\\USER\\.cursor\\projects\\c-Users-USER-Desktop-EPSI-HL\\assets\\c__Users_USER_AppData_Roaming_Cursor_User_workspaceStorage_2953832e4e78b1ccf91a90b2c4f59f3b_images_epsi-hl-logo-9c98b7fc-db60-42dd-b01e-c12b02ed3d97.png",
+  path.join(ASSETS_DIR, "Icono.png"),
 ].filter(Boolean);
 
 const PAGE_WIDTH = 612; // 8.5in

@@ -1,9 +1,11 @@
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const remisionesRouter = require("./routes/remisiones");
 const { authRouter } = require("./routes/auth");
 const usersRouter = require("./routes/users");
+const clientesRouter = require("./routes/clientes");
 
 const app = express();
 
@@ -12,6 +14,7 @@ app.use(express.json({ limit: "2mb" }));
 app.use("/assets", express.static(path.join(__dirname, "..", "assets")));
 app.use("/auth", authRouter);
 app.use("/users", usersRouter);
+app.use("/clientes", clientesRouter);
 
 app.get("/health", (_req, res) => {
   res.json({ ok: true, service: "epsi-hl-api" });
