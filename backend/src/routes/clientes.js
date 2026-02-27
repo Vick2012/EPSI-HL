@@ -1,9 +1,45 @@
 const express = require("express");
 const fs = require("fs");
+const xlsx = require("xlsx");
 const { getDb } = require("../db");
 const { authMiddleware } = require("./auth");
 
 const router = express.Router();
+
+const handleExport = async (req, res) => {
+  if (req.user?.role !== "GERENCIAL") {
+    return res.status(403).json({ ok: false, message: "Solo GERENCIAL puede exportar." });
+  }
+  const db = await getDb();
+  const rows = await db.all(
+    "SELECT tipo_documento, numero_documento, dv, nombre, ciudad, direccion, telefono, email, created_at, updated_at FROM clientes ORDER BY id DESC"
+  );
+  const data = rows.map((row) => ({
+    "TIPO DE DOCUMENTO": row.tipo_documento || "",
+    "NUMERO DE DOCUMENTO": row.numero_documento || "",
+    "DIGITO DE VERIFICACION": row.dv || "",
+    "NOMBRE O RAZON SOCIAL": row.nombre || "",
+    CIUDAD: row.ciudad || "",
+    DIRECCION: row.direccion || "",
+    TELEFONO: row.telefono || "",
+    "CORREO ELECTRONICO": row.email || "",
+    "CREADO EN": row.created_at || "",
+    "ACTUALIZADO EN": row.updated_at || "",
+  }));
+  const workbook = xlsx.utils.book_new();
+  const worksheet = xlsx.utils.json_to_sheet(data);
+  xlsx.utils.book_append_sheet(workbook, worksheet, "Clientes");
+  const buffer = xlsx.write(workbook, { type: "buffer", bookType: "xlsx" });
+  res.setHeader(
+    "Content-Type",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  );
+  res.setHeader("Content-Disposition", "attachment; filename=clientes_epsihl.xlsx");
+  return res.send(buffer);
+};
+
+router.get("/export", authMiddleware, handleExport);
+router.get("/exportar", authMiddleware, handleExport);
 
 router.get("/:numero", authMiddleware, async (req, res) => {
   const { numero } = req.params;

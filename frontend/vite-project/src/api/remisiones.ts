@@ -1,3 +1,5 @@
+import { API_BASE } from "./base";
+
 export type RemisionItem = {
   descripcion: string;
   cantidad: number;
@@ -29,10 +31,7 @@ export type RemisionPayload = {
 
 export async function generarRemisionPdf(payload: RemisionPayload) {
   const token = window.localStorage.getItem("epsiToken");
-  const apiBase =
-    import.meta.env.VITE_API_URL ||
-    `${window.location.protocol}//${window.location.hostname}:3001`;
-  const response = await fetch(`${apiBase}/remisiones`, {
+  const response = await fetch(`${API_BASE}/remisiones`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -50,4 +49,27 @@ export async function generarRemisionPdf(payload: RemisionPayload) {
   }
 
   return response.blob();
+}
+
+export async function fetchRemision(numero: string, token: string) {
+  const response = await fetch(`${API_BASE}/remisiones/${encodeURIComponent(numero)}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response;
+}
+
+export async function updateRemision(numero: string, payload: RemisionPayload, token: string) {
+  const response = await fetch(`${API_BASE}/remisiones/${encodeURIComponent(numero)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(payload),
+  });
+  return response;
+}
+
+export async function fetchRemisionPdf(numero: string, token: string) {
+  const response = await fetch(`${API_BASE}/remisiones/${encodeURIComponent(numero)}/pdf`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response;
 }

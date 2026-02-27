@@ -1,5 +1,29 @@
 import "./style.css";
-import { generarRemisionPdf, type RemisionPayload } from "./api/remisiones";
+import { ASSETS_BASE } from "./api/base";
+import { loginRequest, fetchMe, requestReset, applyReset } from "./api/auth";
+import { exportClientes, fetchCliente, saveCliente, type ClientePayload } from "./api/clientes";
+import {
+  generarRemisionPdf,
+  fetchRemision,
+  updateRemision,
+  fetchRemisionPdf,
+  type RemisionPayload,
+} from "./api/remisiones";
+import { createUser, deleteUser, fetchUsers, resetUserPassword, updateUser } from "./api/users";
+import {
+  canAccessUsersModule,
+  clearSession,
+  formatConsecutivo,
+  getConsecutivo,
+  getRole,
+  getToken,
+  getUserEmail,
+  setConsecutivo,
+  setRole,
+  setToken,
+  setUserEmail,
+} from "./state/session";
+import { calcularDv, formatCurrency } from "./utils/format";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 
@@ -126,25 +150,25 @@ app.innerHTML = `
 
         <section class="module-grid">
           <article class="module-card featured">
-            <div class="module-icon">📄</div>
+            <div class="module-icon"><img src="/icon-remisiones.png" alt="Remisiones PDF" /></div>
             <h2>Remisiones PDF</h2>
             <p>Generación automática con plantilla EPSI HL y envío por email.</p>
             <button class="primary" data-go-remisiones>Ir a remisiones</button>
           </article>
           <article class="module-card">
-            <div class="module-icon">📅</div>
+            <div class="module-icon"><img src="/icon-turnos.png" alt="Turnos" /></div>
             <h2>Turnos</h2>
             <p>Calendario, asignación y panel de empleado.</p>
             <button class="secondary" disabled>Próximamente</button>
           </article>
           <article class="module-card">
-            <div class="module-icon">👥</div>
+            <div class="module-icon"><img src="/icon-usuarios.png" alt="Usuarios y roles" /></div>
             <h2>Usuarios y roles</h2>
             <p>Gestión de usuarios, roles y permisos.</p>
             <button class="secondary user-cta" data-go-usuarios>Ir a usuarios</button>
           </article>
           <article class="module-card">
-            <div class="module-icon">📊</div>
+            <div class="module-icon"><img src="/icon-bi.png" alt="BI" /></div>
             <h2>BI</h2>
             <p>Estadísticas semanales/mensuales y reportes.</p>
             <button class="secondary" disabled>Próximamente</button>
@@ -166,101 +190,137 @@ app.innerHTML = `
             <span id="buscar-remision-status" class="status"></span>
           </div>
         </section>
-        <section class="card">
-          <h2>Datos del cliente</h2>
-          <div class="form-grid">
-            <label>Numero de identidificación
-              <input id="cliente-nit" type="text" placeholder="NIT / C.C." />
-            </label>
-            <label>DV
-              <input id="cliente-dv" type="text" placeholder="DV" readonly />
-            </label>
-            <label>Tipo de documento
-              <select id="cliente-tipo">
-                <option value="CC">Cédula de ciudadanía (CC)</option>
-                <option value="CE">Cédula de extranjería (CE)</option>
-                <option value="PAS">Pasaporte</option>
-                <option value="PPT">Permiso por protección temporal (PPT)</option>
-                <option value="NIT">NIT</option>
-                <option value="OTRO">Otro</option>
-              </select>
-            </label>
-            <label>Nombre / Razón social
-              <input id="cliente-nombre" type="text" placeholder="Nombre completo" />
-            </label>
-            <label>Dirección
-              <input id="cliente-direccion" type="text" placeholder="Dirección" />
-            </label>
-            <label>Ciudad
-              <input id="cliente-ciudad" type="text" placeholder="Ciudad" />
-            </label>
-            <label>Teléfono
-              <input id="cliente-telefono" type="text" placeholder="Teléfono" />
-            </label>
-          </div>
-          <div class="client-actions">
-            <button id="guardar-cliente" class="secondary">Guardar cliente</button>
-            <span id="cliente-status" class="status"></span>
-          </div>
-        </section>
 
-        <section class="card">
-          <h2>Remisión</h2>
-          <div class="form-grid">
-            <label>Número de remisión
-              <input id="remision-numero" type="text" placeholder="RM 001" readonly />
-            </label>
-            <label>Fecha y hora
-              <div id="remision-fecha" class="readonly-field"></div>
-            </label>
-            <label>Método de pago
-              <select id="remision-pago">
-                <option value="efectivo">Efectivo</option>
-                <option value="nequi">Efectivo - Nequi</option>
-                <option value="bancolombia">Transferencia - Bancolombia</option>
-              </select>
-            </label>
-            <label>Total
-              <input id="remision-total" type="number" value="0" min="0" />
-            </label>
-            <label>Observaciones
-              <input id="remision-observaciones" type="text" placeholder="Observaciones" />
-            </label>
-            <label id="remision-anulada-wrap" class="admin-only hidden">Anulada
-              <input id="remision-anulada" type="checkbox" />
-            </label>
-          </div>
-        </section>
+        <div class="remision-wizard">
+          <nav class="wizard-stepper" aria-label="Progreso de la remisión">
+            <button type="button" class="wizard-step active" data-step="1" aria-current="step">
+              <span class="wizard-step-num">1</span>
+              <span class="wizard-step-label">Cliente</span>
+            </button>
+            <span class="wizard-step-connector"></span>
+            <button type="button" class="wizard-step" data-step="2">
+              <span class="wizard-step-num">2</span>
+              <span class="wizard-step-label">Remisión e Items</span>
+            </button>
+            <span class="wizard-step-connector"></span>
+            <button type="button" class="wizard-step" data-step="3">
+              <span class="wizard-step-num">3</span>
+              <span class="wizard-step-label">Resumen</span>
+            </button>
+          </nav>
 
-        <section class="card">
-          <h2>Items</h2>
-          <div class="items-table">
-            <div class="items-header">
-              <span>Cantidad</span>
-              <span>Descripción</span>
-              <span>Valor unitario</span>
-              <span>Subtotal</span>
-            </div>
-            <div class="items-row">
-              <input class="item-cantidad" type="number" value="1" min="1" />
-              <input class="item-descripcion" type="text" placeholder="Descripción" />
-              <input class="item-unitario" type="number" value="0" min="0" />
-              <input class="item-subtotal" type="number" value="0" min="0" readonly />
-            </div>
-          </div>
-          <button id="add-item" class="secondary">Agregar item</button>
-        </section>
+          <div class="wizard-steps">
+            <section class="wizard-step-panel active" data-step="1">
+              <div class="card wizard-card">
+                <h2>Paso 1: Datos del cliente</h2>
+                <p class="wizard-hint">Completa la información del cliente. El NIT/C.C. es obligatorio.</p>
+                <div class="form-grid">
+                  <label>Numero de identificación
+                    <input id="cliente-nit" type="text" placeholder="NIT / C.C." />
+                  </label>
+                  <label>DV
+                    <input id="cliente-dv" type="text" placeholder="DV" readonly />
+                  </label>
+                  <label>Tipo de documento
+                    <select id="cliente-tipo">
+                      <option value="CC">Cédula de ciudadanía (CC)</option>
+                      <option value="CE">Cédula de extranjería (CE)</option>
+                      <option value="PAS">Pasaporte</option>
+                      <option value="PPT">Permiso por protección temporal (PPT)</option>
+                      <option value="NIT">NIT</option>
+                      <option value="OTRO">Otro</option>
+                    </select>
+                  </label>
+                  <label>Nombre / Razón social
+                    <input id="cliente-nombre" type="text" placeholder="Nombre completo" />
+                  </label>
+                  <label>Dirección
+                    <input id="cliente-direccion" type="text" placeholder="Dirección" />
+                  </label>
+                  <label>Ciudad
+                    <input id="cliente-ciudad" type="text" placeholder="Ciudad" />
+                  </label>
+                  <label>Teléfono
+                    <input id="cliente-telefono" type="text" placeholder="Teléfono" />
+                  </label>
+                </div>
+                <div class="client-actions">
+                  <button id="guardar-cliente" class="secondary">Guardar cliente</button>
+                  <button id="exportar-clientes" class="secondary hidden" type="button">
+                    Exportar base de datos de cliente
+                  </button>
+                  <span id="cliente-status" class="status"></span>
+                </div>
+              </div>
+            </section>
 
-        <section class="card">
-          <h2>Totales</h2>
-          <div class="totals">
-            <div>Subtotal: <span id="subtotal">$ 0</span></div>
-            <div>Total: <span id="total">$ 0</span></div>
+            <section class="wizard-step-panel" data-step="2">
+              <div class="card wizard-card">
+                <h2>Paso 2: Remisión e items</h2>
+                <p class="wizard-hint">Configura pago, observaciones y agrega los productos o servicios.</p>
+                <div class="form-grid wizard-inline-fields">
+                  <label>Número de remisión
+                    <input id="remision-numero" type="text" placeholder="RM 001" readonly />
+                  </label>
+                  <label>Fecha y hora
+                    <div id="remision-fecha" class="readonly-field"></div>
+                  </label>
+                  <label>Método de pago
+                    <select id="remision-pago">
+                      <option value="efectivo">Efectivo</option>
+                      <option value="nequi">Efectivo - Nequi</option>
+                      <option value="bancolombia">Transferencia - Bancolombia</option>
+                    </select>
+                  </label>
+                  <label>Total
+                    <input id="remision-total" type="number" value="0" min="0" />
+                  </label>
+                  <label>Observaciones
+                    <input id="remision-observaciones" type="text" placeholder="Observaciones" />
+                  </label>
+                  <label id="remision-anulada-wrap" class="admin-only hidden">Anulada
+                    <input id="remision-anulada" type="checkbox" />
+                  </label>
+                </div>
+                <div class="items-table">
+                  <div class="items-header">
+                    <span>Cantidad</span>
+                    <span>Descripción</span>
+                    <span>Valor unitario</span>
+                    <span>Subtotal</span>
+                  </div>
+                  <div class="items-row">
+                    <input class="item-cantidad" type="number" value="1" min="1" />
+                    <input class="item-descripcion" type="text" placeholder="Descripción" />
+                    <input class="item-unitario" type="number" value="0" min="0" />
+                    <input class="item-subtotal" type="number" value="0" min="0" readonly />
+                  </div>
+                </div>
+                <button id="add-item" class="secondary">Agregar item</button>
+              </div>
+            </section>
+
+            <section class="wizard-step-panel" data-step="3">
+              <div class="card wizard-card">
+                <h2>Paso 3: Resumen y generación</h2>
+                <p class="wizard-hint">Revisa los totales y genera el PDF cuando todo esté correcto.</p>
+                <div class="totals wizard-totals">
+                  <div>Subtotal: <span id="subtotal">$ 0</span></div>
+                  <div>Total: <span id="total">$ 0</span></div>
+                </div>
+                <button id="guardar-remision" class="secondary hidden" type="button">Guardar cambios</button>
+                <button id="generar" class="primary wizard-generar">Generar PDF</button>
+                <div id="status" class="status"></div>
+              </div>
+            </section>
           </div>
-          <button id="guardar-remision" class="secondary hidden" type="button">Guardar cambios</button>
-          <button id="generar" class="primary">Generar PDF</button>
-          <div id="status" class="status"></div>
-        </section>
+
+          <div class="wizard-nav">
+            <button id="wizard-prev" class="secondary wizard-btn-prev hidden" type="button">← Anterior</button>
+            <span id="wizard-error" class="wizard-nav-error"></span>
+            <button id="wizard-next" class="primary wizard-btn-next" type="button">Siguiente →</button>
+          </div>
+        </div>
       </section>
 
       <section id="users-view" class="hidden">
@@ -313,15 +373,14 @@ app.innerHTML = `
   </div>
 `;
 
-const API_BASE =
-  import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:3001`;
-const ASSETS_BASE = import.meta.env.VITE_ASSETS_URL || API_BASE;
-
-const formatCurrency = (value: number) => `$ ${value.toLocaleString("es-CO")}`;
-
 const homeView = app.querySelector<HTMLDivElement>("#home-view")!;
 const remisionView = app.querySelector<HTMLDivElement>("#remision-view")!;
 const usersView = app.querySelector<HTMLDivElement>("#users-view")!;
+const wizardSteps = app.querySelectorAll<HTMLButtonElement>(".wizard-step");
+const wizardPanels = app.querySelectorAll<HTMLElement>(".wizard-step-panel");
+const wizardPrevBtn = app.querySelector<HTMLButtonElement>("#wizard-prev")!;
+const wizardNextBtn = app.querySelector<HTMLButtonElement>("#wizard-next")!;
+const wizardErrorEl = app.querySelector<HTMLSpanElement>("#wizard-error")!;
 const backButton = app.querySelector<HTMLButtonElement>("#back-button")!;
 const itemsTable = app.querySelector<HTMLDivElement>(".items-table")!;
 const subtotalEl = app.querySelector<HTMLSpanElement>("#subtotal")!;
@@ -337,6 +396,7 @@ const buscarRemisionStatus = app.querySelector<HTMLSpanElement>("#buscar-remisio
 const guardarRemisionBtn = app.querySelector<HTMLButtonElement>("#guardar-remision")!;
 const clienteStatusEl = app.querySelector<HTMLSpanElement>("#cliente-status")!;
 const guardarClienteBtn = app.querySelector<HTMLButtonElement>("#guardar-cliente")!;
+const exportarClientesBtn = app.querySelector<HTMLButtonElement>("#exportar-clientes")!;
 const clienteNitInput = app.querySelector<HTMLInputElement>("#cliente-nit")!;
 const clienteDvInput = app.querySelector<HTMLInputElement>("#cliente-dv")!;
 const clienteTipoSelect = app.querySelector<HTMLSelectElement>("#cliente-tipo")!;
@@ -356,6 +416,8 @@ const userCreateBtn = app.querySelector<HTMLButtonElement>("#user-create")!;
 const userCancelBtn = app.querySelector<HTMLButtonElement>("#user-cancel")!;
 let editingUserId: string | null = null;
 let editingRemisionNumero: string | null = null;
+let wizardCurrentStep = 1;
+const WIZARD_MAX_STEP = 3;
 const usersStatus = app.querySelector<HTMLSpanElement>("#users-status")!;
 const usersList = app.querySelector<HTMLDivElement>("#users-list")!;
 const loginModal = app.querySelector<HTMLDivElement>("#login-modal")!;
@@ -381,8 +443,8 @@ let pendingAction: null | (() => void) = null;
 const logoImg = app.querySelector<HTMLImageElement>("#brand-logo")!;
 const logoBase = ASSETS_BASE;
 const logoSources = [
-  `${logoBase}/assets/Icono.png`,
   "/Icono.png",
+  `${logoBase}/assets/Icono.png`,
 ];
 let logoIndex = 0;
 logoImg.src = logoSources[logoIndex];
@@ -417,9 +479,6 @@ const closeLogin = () => {
   loginModal.style.removeProperty("display");
 };
 
-const canAccessUsersModule = (role: string | null) =>
-  role === "GERENCIAL" || role === "DIRECCION" || role === "SUPERVISION";
-
 const applyRole = (role: string | null) => {
   const isGerencial = role === "GERENCIAL";
   const isEditing = Boolean(editingRemisionNumero);
@@ -429,6 +488,7 @@ const applyRole = (role: string | null) => {
   remisionNumeroInput.readOnly = !isGerencial || isEditing;
   remisionAnuladaWrap.classList.toggle("hidden", !isGerencial);
   buscarRemisionSection.classList.toggle("hidden", !isGerencial);
+  exportarClientesBtn.classList.toggle("hidden", !isGerencial);
   guardarRemisionBtn.classList.toggle("hidden", !isGerencial || !isEditing);
   cancelarEdicionRemisionBtn.classList.toggle("hidden", !isGerencial || !isEditing);
   if (!isGerencial) {
@@ -437,15 +497,13 @@ const applyRole = (role: string | null) => {
 };
 
 const refreshRole = async () => {
-  const token = window.localStorage.getItem("epsiToken");
+  const token = getToken();
   if (!token) {
     applyRole(null);
     return;
   }
   try {
-    const response = await fetch(`${API_BASE}/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await fetchMe(token);
     if (!response.ok) {
       applyRole(null);
       return;
@@ -453,7 +511,7 @@ const refreshRole = async () => {
     const data = await response.json();
     const role = data?.role || data?.user?.role;
     if (role) {
-      window.localStorage.setItem("epsiRole", role);
+      setRole(role);
       applyRole(role);
     }
   } catch {
@@ -486,11 +544,7 @@ const login = async () => {
   }
   try {
     loginSubmit.disabled = true;
-    const response = await fetch(`${API_BASE}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+    const response = await loginRequest(email, password);
     if (!response.ok) {
       const message = await response.text();
       loginError.textContent = message || "Credenciales inválidas.";
@@ -499,10 +553,10 @@ const login = async () => {
       return;
     }
     const data = await response.json();
-    window.localStorage.setItem("epsiToken", data.token);
-    window.localStorage.setItem("epsiUserEmail", data.email);
+    setToken(data.token);
+    setUserEmail(data.email);
     if (data.role) {
-      window.localStorage.setItem("epsiRole", data.role);
+      setRole(data.role);
       applyRole(data.role);
     }
     currentUserEl.textContent = `Usuario: ${data.email}`;
@@ -521,18 +575,6 @@ const login = async () => {
     loginSubmit.disabled = false;
   }
 };
-
-const getConsecutivo = () => {
-  const raw = window.localStorage.getItem("epsiRemisionConsecutivo");
-  const value = Number(raw || 1);
-  return Number.isFinite(value) && value > 0 ? value : 1;
-};
-
-const setConsecutivo = (value: number) => {
-  window.localStorage.setItem("epsiRemisionConsecutivo", String(value));
-};
-
-const formatConsecutivo = (value: number) => `RM ${String(value).padStart(3, "0")}`;
 
 const cargarConsecutivo = () => {
   remisionNumeroInput.value = formatConsecutivo(getConsecutivo());
@@ -561,41 +603,24 @@ type Cliente = {
   telefono?: string;
 };
 
-const calcularDv = (nit: string) => {
-  const digits = nit.replace(/\D/g, "");
-  if (!digits) return "";
-  const factors = [3, 7, 13, 17, 19, 23, 29, 37, 41, 43, 47, 53, 59, 67, 71];
-  let sum = 0;
-  const reversed = digits.split("").reverse();
-  reversed.forEach((digit, index) => {
-    const factor = factors[index] ?? 0;
-    sum += Number(digit) * factor;
-  });
-  const residue = sum % 11;
-  const dv = residue > 1 ? 11 - residue : residue;
-  return String(dv);
-};
-
 const actualizarDv = () => {
   const nit = clienteNitInput.value.trim();
   clienteDvInput.value = calcularDv(nit);
 };
 
-const fetchCliente = async (nit: string) => {
-  const token = window.localStorage.getItem("epsiToken");
+const fetchClienteDb = async (nit: string) => {
+  const token = getToken();
   if (!token) return null;
-  const response = await fetch(`${API_BASE}/clientes/${encodeURIComponent(nit)}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await fetchCliente(nit, token);
   if (!response.ok) return null;
   const data = await response.json();
   return data.cliente as Cliente;
 };
 
 const saveClienteDb = async (cliente: Cliente) => {
-  const token = window.localStorage.getItem("epsiToken");
+  const token = getToken();
   if (!token) return false;
-  const payload = {
+  const payload: ClientePayload = {
     tipo_documento: cliente.tipoDocumento || null,
     numero_documento: cliente.nit,
     dv: cliente.dv || null,
@@ -605,11 +630,7 @@ const saveClienteDb = async (cliente: Cliente) => {
     telefono: cliente.telefono || null,
     email: "",
   };
-  const response = await fetch(`${API_BASE}/clientes`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify(payload),
-  });
+  const response = await saveCliente(payload, token);
   return response.ok;
 };
 
@@ -639,7 +660,7 @@ clienteNitInput.addEventListener("blur", async () => {
   const nit = clienteNitInput.value.trim();
   actualizarDv();
   if (!nit) return;
-  const cliente = await fetchCliente(nit);
+  const cliente = await fetchClienteDb(nit);
   if (cliente) {
     llenarCliente(cliente);
     clienteStatusEl.textContent = "Cliente encontrado y cargado.";
@@ -670,22 +691,115 @@ guardarClienteBtn.addEventListener("click", async () => {
     ? "Cliente guardado correctamente."
     : "No se pudo guardar el cliente.";
 });
+
+exportarClientesBtn.addEventListener("click", async () => {
+  const token = getToken();
+  if (!token) {
+    clienteStatusEl.textContent = "Debes iniciar sesión para exportar.";
+    openLogin(goRemisiones);
+    return;
+  }
+  clienteStatusEl.textContent = "Exportando base de datos...";
+  try {
+    const response = await exportClientes(token);
+    if (!response.ok) {
+      const msg = await response.text();
+      clienteStatusEl.textContent = msg || "No se pudo exportar la base de datos.";
+      return;
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "clientes_epsihl.xlsx";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    clienteStatusEl.textContent = "Exportación completada.";
+  } catch {
+    clienteStatusEl.textContent = "Error exportando la base de datos.";
+  }
+});
+const goToWizardStep = (step: number) => {
+  if (step < 1 || step > WIZARD_MAX_STEP) return;
+  wizardCurrentStep = step;
+
+  wizardSteps.forEach((btn) => {
+    const n = Number(btn.dataset.step);
+    btn.classList.remove("active");
+    btn.removeAttribute("aria-current");
+    if (n < step) {
+      btn.classList.add("completed");
+    } else {
+      btn.classList.remove("completed");
+    }
+    if (n === step) {
+      btn.classList.add("active");
+      btn.setAttribute("aria-current", "step");
+    }
+  });
+
+  wizardPanels.forEach((panel) => {
+    const n = Number(panel.dataset.step);
+    panel.classList.toggle("active", n === step);
+  });
+
+  wizardPrevBtn.classList.toggle("hidden", step === 1);
+  wizardNextBtn.classList.toggle("hidden", step === WIZARD_MAX_STEP);
+};
+
+const clearWizardError = () => {
+  clienteStatusEl.textContent = "";
+  wizardErrorEl.textContent = "";
+  statusEl.textContent = "";
+};
+
+const validateWizardStep = (step: number): boolean => {
+  clearWizardError();
+  if (step === 1) {
+    const nit = clienteNitInput.value.trim();
+    if (!nit) {
+      clienteStatusEl.textContent = "Ingresa el NIT o C.C. del cliente para continuar.";
+      return false;
+    }
+    const nombre = clienteNombreInput.value.trim();
+    if (!nombre) {
+      clienteStatusEl.textContent = "Ingresa el nombre o razón social para continuar.";
+      return false;
+    }
+    return true;
+  }
+  if (step === 2) {
+    const rows = Array.from(app.querySelectorAll<HTMLDivElement>(".items-row"));
+    const hasValid = rows.some((row) => {
+      const desc = row.querySelector<HTMLInputElement>(".item-descripcion")!.value.trim();
+      return desc.length > 0;
+    });
+    if (!hasValid) {
+      wizardErrorEl.textContent = "Agrega al menos un item con descripción para continuar.";
+      return false;
+    }
+    return true;
+  }
+  return true;
+};
+
 const goRemisiones = () => {
   homeView.classList.add("hidden");
   remisionView.classList.remove("hidden");
   usersView.classList.add("hidden");
   backButton.disabled = false;
   cargarConsecutivo();
-  applyRole(window.localStorage.getItem("epsiRole"));
+  applyRole(getRole());
+  goToWizardStep(1);
 };
 
 const goUsers = () => {
-  const role = window.localStorage.getItem("epsiRole");
+  const role = getRole();
   if (!canAccessUsersModule(role)) {
     window.alert("No tienes permisos. Inicia sesión con un usuario autorizado.");
-    window.localStorage.removeItem("epsiToken");
-    window.localStorage.removeItem("epsiUserEmail");
-    window.localStorage.removeItem("epsiRole");
+    clearSession();
     currentUserEl.textContent = "";
     currentUserEl.classList.add("hidden");
     applyRole(null);
@@ -701,7 +815,7 @@ const goUsers = () => {
 
 app.querySelectorAll("[data-go-remisiones]").forEach((button) => {
   button.addEventListener("click", () => {
-    const token = window.localStorage.getItem("epsiToken");
+    const token = getToken();
     if (!token) {
       openLogin(goRemisiones);
       return;
@@ -712,7 +826,7 @@ app.querySelectorAll("[data-go-remisiones]").forEach((button) => {
 
 app.querySelectorAll("[data-go-usuarios]").forEach((button) => {
   button.addEventListener("click", () => {
-    const token = window.localStorage.getItem("epsiToken");
+    const token = getToken();
     if (!token) {
       openLogin(goUsers);
       return;
@@ -722,9 +836,7 @@ app.querySelectorAll("[data-go-usuarios]").forEach((button) => {
 });
 
 backButton.addEventListener("click", () => {
-  window.localStorage.removeItem("epsiToken");
-  window.localStorage.removeItem("epsiUserEmail");
-  window.localStorage.removeItem("epsiRole");
+  clearSession();
   currentUserEl.textContent = "";
   currentUserEl.classList.add("hidden");
   goHome();
@@ -772,13 +884,13 @@ const setItemsFromRemision = (items: Array<{ cantidad: number; descripcion: stri
 const enterEditMode = (numero: string) => {
   editingRemisionNumero = numero;
   generarBtn.disabled = true;
-  applyRole(window.localStorage.getItem("epsiRole"));
+  applyRole(getRole());
 };
 
 const exitEditMode = () => {
   editingRemisionNumero = null;
   generarBtn.disabled = false;
-  applyRole(window.localStorage.getItem("epsiRole"));
+  applyRole(getRole());
 };
 
 const addItemRow = (item?: { cantidad?: number; descripcion?: string; valorUnitario?: number; subtotal?: number }) => {
@@ -809,7 +921,7 @@ app.querySelectorAll("input, select").forEach((input) => {
 });
 
 buscarRemisionBtn.addEventListener("click", async () => {
-  const token = window.localStorage.getItem("epsiToken");
+  const token = getToken();
   if (!token) {
     buscarRemisionStatus.textContent = "Debes iniciar sesión.";
     openLogin(goRemisiones);
@@ -822,9 +934,7 @@ buscarRemisionBtn.addEventListener("click", async () => {
   }
   buscarRemisionStatus.textContent = "Buscando remisión...";
   try {
-    const response = await fetch(`${API_BASE}/remisiones/${encodeURIComponent(numero)}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await fetchRemision(numero, token);
     if (!response.ok) {
       const msg = await response.text();
       buscarRemisionStatus.textContent = msg || "No se pudo encontrar la remisión.";
@@ -840,12 +950,14 @@ buscarRemisionBtn.addEventListener("click", async () => {
     clienteNombreInput.value = remision.cliente?.nombre || "";
     clienteNitInput.value = remision.cliente?.nit || "";
     clienteDvInput.value = remision.cliente?.dv || "";
-    clienteTipoSelect.value = remision.cliente?.tipoDocumento || "CC";
+    clienteTipoSelect.value = remision.cliente?.tipoDocumento || remision.cliente?.tipo_documento || "CC";
     clienteDireccionInput.value = remision.cliente?.direccion || "";
     clienteCiudadInput.value = remision.cliente?.ciudad || "";
     clienteTelefonoInput.value = remision.cliente?.telefono || "";
     setItemsFromRemision(remision.items || []);
     enterEditMode(numero);
+    recalc();
+    goToWizardStep(3);
     buscarRemisionStatus.textContent = "Remisión cargada para edición.";
   } catch {
     buscarRemisionStatus.textContent = "Error consultando la remisión.";
@@ -855,6 +967,37 @@ buscarRemisionBtn.addEventListener("click", async () => {
 cancelarEdicionRemisionBtn.addEventListener("click", () => {
   exitEditMode();
   buscarRemisionStatus.textContent = "Edición cancelada.";
+});
+
+wizardPrevBtn.addEventListener("click", () => {
+  clearWizardError();
+  if (wizardCurrentStep > 1) {
+    goToWizardStep(wizardCurrentStep - 1);
+  }
+});
+
+wizardNextBtn.addEventListener("click", () => {
+  if (wizardCurrentStep === WIZARD_MAX_STEP) return;
+  if (wizardCurrentStep < WIZARD_MAX_STEP && validateWizardStep(wizardCurrentStep)) {
+    recalc();
+    goToWizardStep(wizardCurrentStep + 1);
+  }
+});
+
+wizardSteps.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const targetStep = Number(btn.dataset.step);
+    if (targetStep <= wizardCurrentStep) {
+      clearWizardError();
+      goToWizardStep(targetStep);
+    } else if (targetStep > wizardCurrentStep) {
+      for (let s = wizardCurrentStep; s < targetStep; s++) {
+        if (!validateWizardStep(s)) return;
+      }
+      recalc();
+      goToWizardStep(targetStep);
+    }
+  });
 });
 
 const buildRemisionPayload = (): RemisionPayload => {
@@ -895,7 +1038,7 @@ const buildRemisionPayload = (): RemisionPayload => {
 };
 
 guardarRemisionBtn.addEventListener("click", async () => {
-  const token = window.localStorage.getItem("epsiToken");
+  const token = getToken();
   if (!token) {
     statusEl.textContent = "Debes iniciar sesión para guardar.";
     openLogin(goRemisiones);
@@ -908,22 +1051,13 @@ guardarRemisionBtn.addEventListener("click", async () => {
   statusEl.textContent = "Guardando cambios...";
   try {
     const payload = buildRemisionPayload();
-    const response = await fetch(`${API_BASE}/remisiones/${encodeURIComponent(editingRemisionNumero)}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify(payload),
-    });
+    const response = await updateRemision(editingRemisionNumero, payload, token);
     if (!response.ok) {
       const msg = await response.text();
       statusEl.textContent = msg || "No se pudo guardar la remisión.";
       return;
     }
-    const pdfResponse = await fetch(
-      `${API_BASE}/remisiones/${encodeURIComponent(editingRemisionNumero)}/pdf`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+    const pdfResponse = await fetchRemisionPdf(editingRemisionNumero, token);
     if (pdfResponse.ok) {
       const pdf = await pdfResponse.blob();
       const url = URL.createObjectURL(pdf);
@@ -936,7 +1070,7 @@ guardarRemisionBtn.addEventListener("click", async () => {
 });
 
 app.querySelector("#generar")!.addEventListener("click", async () => {
-  const token = window.localStorage.getItem("epsiToken");
+  const token = getToken();
   if (!token) {
     statusEl.textContent = "Debes iniciar sesión para generar remisiones.";
     openLogin();
@@ -964,13 +1098,11 @@ app.querySelector("#generar")!.addEventListener("click", async () => {
 });
 
 const loadUsers = async () => {
-  const token = window.localStorage.getItem("epsiToken");
+  const token = getToken();
   if (!token) return;
   usersStatus.textContent = "Cargando usuarios...";
   try {
-    const response = await fetch(`${API_BASE}/users`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await fetchUsers(token);
     if (!response.ok) {
       usersStatus.textContent = "No tienes permisos para ver usuarios.";
       return;
@@ -1016,10 +1148,7 @@ const loadUsers = async () => {
       btn.addEventListener("click", async () => {
         const id = (btn as HTMLButtonElement).dataset.resetUser;
         if (!id) return;
-        const responseReset = await fetch(`${API_BASE}/users/${id}/reset`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const responseReset = await resetUserPassword(id, token);
         if (!responseReset.ok) {
           usersStatus.textContent = "No se pudo resetear.";
           return;
@@ -1035,10 +1164,7 @@ const loadUsers = async () => {
         if (!id) return;
         const confirmDelete = window.confirm("¿Eliminar usuario?");
         if (!confirmDelete) return;
-        const responseDelete = await fetch(`${API_BASE}/users/${id}`, {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const responseDelete = await deleteUser(id, token);
         if (!responseDelete.ok) {
           usersStatus.textContent = "No se pudo eliminar.";
           return;
@@ -1052,7 +1178,7 @@ const loadUsers = async () => {
 };
 
 userCreateBtn.addEventListener("click", async () => {
-  const token = window.localStorage.getItem("epsiToken");
+  const token = getToken();
   if (!token) {
     usersStatus.textContent = "Debes iniciar sesión.";
     openLogin(goUsers);
@@ -1079,12 +1205,9 @@ userCreateBtn.addEventListener("click", async () => {
   };
   usersStatus.textContent = isEditing ? "Guardando cambios..." : "Creando usuario...";
   try {
-    const endpoint = isEditing ? `${API_BASE}/users/${editingUserId}` : `${API_BASE}/users`;
-    const response = await fetch(endpoint, {
-      method: isEditing ? "PUT" : "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify(payload),
-    });
+    const response = isEditing && editingUserId
+      ? await updateUser(editingUserId, payload, token)
+      : await createUser(payload, token);
     if (!response.ok) {
       const msg = await response.text();
       usersStatus.textContent = msg || (isEditing ? "No se pudo actualizar el usuario." : "No se pudo crear el usuario.");
@@ -1120,12 +1243,12 @@ setInterval(updateFechaHora, 60000);
 cargarConsecutivo();
 recalc();
 
-const savedUser = window.localStorage.getItem("epsiUserEmail");
+const savedUser = getUserEmail();
 if (savedUser) {
   currentUserEl.textContent = `Usuario: ${savedUser}`;
   currentUserEl.classList.remove("hidden");
 }
-applyRole(window.localStorage.getItem("epsiRole"));
+applyRole(getRole());
 refreshRole();
 
 loginSubmit.addEventListener("click", login);
@@ -1153,11 +1276,7 @@ resetRequest.addEventListener("click", async () => {
     resetStatus.classList.remove("hidden");
     return;
   }
-  const response = await fetch(`${API_BASE}/auth/request-reset`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email }),
-  });
+  const response = await requestReset(email);
   const data = await response.json();
   resetStatus.textContent = data.devToken
     ? `Token dev: ${data.devToken}`
@@ -1173,11 +1292,7 @@ resetApply.addEventListener("click", async () => {
     resetStatus.classList.remove("hidden");
     return;
   }
-  const response = await fetch(`${API_BASE}/auth/reset-password`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ token, password }),
-  });
+  const response = await applyReset(token, password);
   const data = await response.json();
   resetStatus.textContent = data.message || "Proceso terminado.";
   resetStatus.classList.remove("hidden");

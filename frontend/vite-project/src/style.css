@@ -1,5 +1,5 @@
 :root {
-  font-family: "GIORGIA", "Georgia", "Times New Roman", serif;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
   color: #101828;
@@ -24,6 +24,7 @@ body {
   min-height: 100vh;
 }
 
+/* Layout */
 .page {
   display: grid;
   grid-template-columns: 260px 1fr;
@@ -31,6 +32,7 @@ body {
   background: #f7f8fb;
 }
 
+/* Sidebar */
 .sidebar {
   background: #1f3f83;
   color: #ffffff;
@@ -99,6 +101,7 @@ body {
   margin-top: auto;
 }
 
+/* Header */
 .main {
   display: flex;
   flex-direction: column;
@@ -133,6 +136,7 @@ body {
   border: 1px solid rgba(241, 154, 62, 0.6);
 }
 
+/* Modals */
 .login-modal {
   position: fixed;
   inset: 0;
@@ -179,11 +183,7 @@ body {
   text-decoration: underline;
 }
 
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+/* Buttons */
 .ghost {
   border: 1px solid #d0d5dd;
   background: #ffffff;
@@ -264,6 +264,164 @@ body {
 .content {
   display: grid;
   gap: 20px;
+}
+
+/* Wizard de remisiones */
+.remision-wizard {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.wizard-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 16px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(16, 24, 40, 0.06);
+}
+
+.wizard-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #64748b;
+  transition: all 0.2s ease;
+}
+
+.wizard-step:hover:not(:disabled) {
+  background: #f1f5f9;
+  color: #1f3f83;
+}
+
+.wizard-step.active {
+  background: #1f3f83;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.wizard-step.completed {
+  color: #16a34a;
+}
+
+.wizard-step.completed .wizard-step-num {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.wizard-step-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.wizard-step.active .wizard-step-num {
+  background: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+}
+
+.wizard-step-label {
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.wizard-step-connector {
+  width: 24px;
+  height: 2px;
+  background: #e2e8f0;
+  flex-shrink: 0;
+}
+
+.wizard-steps {
+  position: relative;
+  min-height: 320px;
+}
+
+.wizard-step-panel {
+  display: none;
+  animation: wizardFadeIn 0.25s ease;
+}
+
+.wizard-step-panel.active {
+  display: block;
+}
+
+@keyframes wizardFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.wizard-card {
+  margin: 0;
+}
+
+.wizard-hint {
+  font-size: 14px;
+  color: #64748b;
+  text-align: center;
+  margin: -4px 0 12px 0 !important;
+}
+
+.wizard-totals {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.wizard-generar {
+  width: 100%;
+  padding: 14px 20px;
+  font-size: 16px;
+}
+
+.wizard-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(16, 24, 40, 0.06);
+}
+
+.wizard-nav-error {
+  flex: 1;
+  font-size: 13px;
+  color: #b3202d;
+  text-align: center;
+  min-height: 20px;
+}
+
+.wizard-btn-prev {
+  margin-top: 0;
+}
+
+.wizard-btn-next {
+  margin-top: 0;
+}
+
+.wizard-nav .wizard-btn-prev.hidden,
+.wizard-nav .wizard-btn-next.hidden {
+  visibility: hidden;
 }
 
 .card {
@@ -654,8 +812,8 @@ select {
 }
 
 .module-icon {
-  width: 48px;
-  height: 48px;
+  width: 64px;
+  height: 64px;
   border-radius: 12px;
   background: rgba(31, 63, 131, 0.1);
   color: #1f3f83;
@@ -663,6 +821,14 @@ select {
   place-items: center;
   font-size: 22px;
   margin: 0 auto;
+  overflow: hidden;
+}
+
+.module-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 .module-card.featured {
