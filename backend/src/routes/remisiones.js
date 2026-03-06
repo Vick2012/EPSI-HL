@@ -7,7 +7,8 @@ const path = require("path");
 const fs = require("fs");
 
 const router = express.Router();
-const PDF_OUTPUT_DIR = process.env.PDF_OUTPUT_DIR || "C:\\Users\\USER\\Desktop\\Remisiones PDF";
+const PDF_OUTPUT_DIR =
+  process.env.PDF_OUTPUT_DIR || path.join(process.cwd(), "remisiones-pdf");
 
 router.post("/", authMiddleware, async (req, res) => {
   const canAnular = req.user?.role === "GERENCIAL";
