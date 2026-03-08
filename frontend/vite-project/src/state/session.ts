@@ -5,15 +5,15 @@ const CONSECUTIVO_KEY = "epsiRemisionConsecutivo";
 
 export const getToken = () => window.localStorage.getItem(TOKEN_KEY);
 export const setToken = (token: string) => window.localStorage.setItem(TOKEN_KEY, token);
-export const clearToken = () => window.localStorage.removeItem(TOKEN_KEY);
+const clearToken = () => window.localStorage.removeItem(TOKEN_KEY);
 
 export const getRole = () => window.localStorage.getItem(ROLE_KEY);
 export const setRole = (role: string) => window.localStorage.setItem(ROLE_KEY, role);
-export const clearRole = () => window.localStorage.removeItem(ROLE_KEY);
+const clearRole = () => window.localStorage.removeItem(ROLE_KEY);
 
 export const getUserEmail = () => window.localStorage.getItem(EMAIL_KEY);
 export const setUserEmail = (email: string) => window.localStorage.setItem(EMAIL_KEY, email);
-export const clearUserEmail = () => window.localStorage.removeItem(EMAIL_KEY);
+const clearUserEmail = () => window.localStorage.removeItem(EMAIL_KEY);
 
 export const clearSession = () => {
   clearToken();

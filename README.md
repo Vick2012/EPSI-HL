@@ -1,56 +1,201 @@
-EPSI HL - Sistema IRIS
+# EPSI HL - Sistema IRIS
 
-Esta carpeta contiene el proyecto Sistema IRIS con los módulos solicitados:
+Sistema de gestión interna para EPSI HL. Plataforma web que centraliza remisiones en PDF, gestión de clientes, usuarios con roles y permisos, con autenticación JWT.
 
-- Remisiones en PDF con formato institucional y trazabilidad por usuario.
-- Gestión de turnos con calendario y notificaciones WhatsApp.
-- Gestión de usuarios y roles con JWT (login requerido para remisiones).
-- BI con métricas y gráficas.
+---
 
-Tecnologías utilizadas
+## Tecnologías
 
-* Backend (API)
+### Backend (API REST)
 
-| Tecnología | Propósito |
-|------------|-----------|
-| **Node.js** | Entorno de ejecución JavaScript en el servidor. |
-| **Express** | Framework HTTP para rutas (auth, remisiones, clientes, usuarios) y middleware. |
-| **SQLite** | Base de datos embebida en archivo; sin servidor externo, adecuada para equipos pequeños y despliegue sencillo. |
-| **JWT (jsonwebtoken)** | Tokens de sesión sin estado en servidor. |
-| **bcrypt** | Hash seguro de contraseñas antes de guardarlas. |
-| **PDFKit** | Generación de PDFs de remisiones con layout, tablas y cálculos. |
-| **Sharp** | Procesamiento de logos/imágenes (redimensionar, convertir) para incluirlos en el PDF. |
-| **Nodemailer** | Envío de correos (recuperación de contraseña, etc.). |
-| **xlsx** | Exportación de la base de clientes a Excel (.xlsx). |
-| **Zod** | Validación de datos de entrada y tipado en la API. |
-| **dotenv** | Cargar secrets y configuración desde variables de entorno. |
-| **CORS** | Controlar qué dominios pueden consumir la API desde el navegador. |
-| **Helmet** | Cabeceras HTTP de seguridad (protección XSS, clickjacking, etc.). |
-| **express-rate-limit** | Límite de intentos de login por IP para mitigar fuerza bruta. |
+| Tecnología | Versión | Propósito |
+|------------|---------|-----------|
+| **Node.js** | LTS | Entorno de ejecución JavaScript |
+| **Express** | ^5.2 | Framework HTTP, rutas y middleware |
+| **SQLite** | ^5.1 | Base de datos embebida (archivo `iris.db`) |
+| **JWT** (jsonwebtoken) | ^9.0 | Tokens de sesión stateless |
+| **bcrypt** | ^6.0 | Hash seguro de contraseñas |
+| **PDFKit** | ^0.17 | Generación de PDFs de remisiones |
+| **Sharp** | ^0.34 | Procesamiento de imágenes/logos para PDF |
+| **xlsx** | ^0.18 | Exportación de clientes a Excel |
+| **Zod** | ^4.3 | Validación y esquemas de datos |
+| **Nodemailer** | ^7.0 | Envío de correos (recuperación de contraseña) |
+| **Helmet** | ^8.1 | Cabeceras HTTP de seguridad |
+| **express-rate-limit** | ^8.2 | Límite de intentos de login por IP |
+| **CORS** | ^2.8 | Control de orígenes permitidos |
+| **dotenv** | ^17.2 | Variables de entorno |
 
-Frontend (interfaz)
+### Frontend
 
-| Tecnología | Propósito |
-|------------|-----------|
-| **Vite** | Build tool y dev server con HMR; builds optimizados para producción. |
-| **TypeScript** | Tipado estático para menos errores y mejor mantenibilidad. |
-| **Vanilla JS (DOM)** | Sin framework; manipulación directa del DOM. Proyecto liviano y controlable. |
-| **CSS** | Estilos propios para layout, wizard, cards, responsividad y tema corporativo. |
+| Tecnología | Versión | Propósito |
+|------------|---------|-----------|
+| **Vite** | ^7.2 | Build tool, dev server, HMR |
+| **TypeScript** | ~5.9 | Tipado estático |
+| **Vanilla JS** | — | DOM directo, sin framework |
+| **CSS** | — | Estilos propios, layout responsive |
 
-Estructura del proyecto
+---
 
-- `backend/` — API REST (Node.js + Express).
-- `frontend/vite-project/` — UI web (Vite + TypeScript).
-- `docs/` — Guía paso a paso.
+## Estructura del proyecto
 
-Estado actual
+```
+EPSI HL/
+├── backend/
+│   ├── src/
+│   │   ├── index.js           # Punto de entrada, Express app
+│   │   ├── db.js              # Inicialización SQLite, tablas, admin por defecto
+│   │   ├── routes/
+│   │   │   ├── auth.js        # Login, JWT, recuperación de contraseña
+│   │   │   ├── clientes.js    # CRUD clientes, exportar Excel
+│   │   │   ├── remisiones.js  # Crear, consultar, editar, PDF
+│   │   │   └── users.js       # CRUD usuarios, roles, reset password
+│   │   ├── services/
+│   │   │   └── pdfRemision.js # Generación PDF con plantilla EPSI HL
+│   │   └── validators/
+│   │       ├── remision.js    # Esquemas Zod para remisiones
+│   │       └── users.js       # Esquemas Zod para usuarios
+│   ├── assets/                # Logos e imágenes para PDF
+│   ├── data/                  # iris.db (SQLite)
+│   ├── .env                   # Variables de entorno (no versionado)
+│   └── package.json
+│
+├── frontend/
+│   └── vite-project/
+│       ├── src/
+│       │   ├── main.ts        # Aplicación SPA, rutas, wizard remisiones
+│       │   ├── style.css      # Estilos globales
+│       │   ├── api/
+│       │   │   ├── auth.ts    # Login, fetchMe, reset password
+│       │   │   ├── base.ts    # API_BASE, ASSETS_BASE, WhatsApp
+│       │   │   ├── clientes.ts
+│       │   │   ├── remisiones.ts
+│       │   │   └── users.ts
+│       │   ├── state/
+│       │   │   └── session.ts # Token, rol, consecutivo
+│       │   └── utils/
+│       │       └── format.ts  # formatCurrency, calcularDv
+│       ├── public/            # Assets estáticos (logos, iconos)
+│       ├── index.html
+│       └── package.json
+│
+└── docs/
+    └── paso-a-paso.md         # Guía de configuración
+```
 
-- UI renovada con sidebar y hero.
-- Remisiones requieren login para generar PDF.
-- Consecutivo automático RM 001, RM 002, ...
-- IVA 19% calculado sobre el total ingresado.
-- PDF con fecha/hora en pie de página y usuario autenticado.
+---
 
-## Primer paso
+## Módulos
 
-Sigue la guía en `docs/paso-a-paso.md`.
+| Módulo | Estado | Descripción |
+|--------|--------|-------------|
+| **Remisiones** | ✅ Activo | Crear remisiones, generar PDF, buscar/editar (rol GERENCIAL) |
+| **Clientes** | ✅ Activo | CRUD clientes, exportar Excel (rol GERENCIAL) |
+| **Usuarios** | ✅ Activo | CRUD usuarios, roles, reset contraseña (GERENCIAL, DIRECCIÓN) |
+| **Turnos** | 🔜 Próximamente | Calendario, asignación, notificaciones |
+| **Reportes / BI** | 🔜 Próximamente | Métricas y gráficos |
+
+---
+
+## Roles y permisos
+
+| Rol | Crear usuarios | Modificar remisiones | Exportar clientes |
+|-----|----------------|----------------------|-------------------|
+| **GERENCIAL** | ✅ | ✅ | ✅ |
+| **DIRECCIÓN** | ✅ | ❌ | ❌ |
+| **SUPERVISIÓN** | ❌ | ❌ | ❌ |
+| **ASISTENTE, APOYO, AUXILIARES** | ❌ | ❌ | ❌ |
+
+---
+
+## Inicio rápido
+
+### Requisitos
+
+- Node.js 18+ (LTS recomendado)
+- npm
+
+### 1. Instalar dependencias
+
+```bash
+cd backend && npm install && cd ..
+cd frontend/vite-project && npm install && cd ../..
+```
+
+### 2. Configurar entorno
+
+En `backend/` crear `.env`:
+
+```env
+PORT=3001
+JWT_SECRET=tu-clave-secreta-segura
+ADMIN_DEFAULT_PASSWORD=Admin123!
+CORS_ORIGINS=http://localhost:5173
+```
+
+### 3. Ejecutar
+
+**Terminal 1 – API:**
+```bash
+cd backend
+npm run dev
+```
+
+**Terminal 2 – Frontend:**
+```bash
+cd frontend/vite-project
+npm run dev
+```
+
+- **API:** http://localhost:3001  
+- **Frontend:** http://localhost:5173  
+
+### 4. Acceso por defecto
+
+- **Usuario:** `admin` o `admin@epsihl.com`
+- **Contraseña:** `Admin123!` (o `ADMIN_DEFAULT_PASSWORD` en `.env`)
+
+---
+
+## Variables de entorno (Backend)
+
+| Variable | Descripción | Ejemplo |
+|----------|-------------|---------|
+| `PORT` | Puerto del API | `3001` |
+| `JWT_SECRET` | Clave para firmar tokens | Obligatorio en producción |
+| `ADMIN_DEFAULT_PASSWORD` | Contraseña del admin por defecto | `Admin123!` |
+| `CORS_ORIGINS` | Orígenes permitidos (comma-separated) | `http://localhost:5173` |
+| `TRUST_PROXY` | Activar si hay proxy inverso | `1` |
+| `PDF_OUTPUT_DIR` | Carpeta para guardar PDFs | Ruta absoluta |
+| `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` | Configuración SMTP (recuperación contraseña) | — |
+| `LOGIN_RATE_WINDOW_MS` | Ventana para rate limit (ms) | `900000` |
+| `LOGIN_RATE_MAX` | Intentos máximos por ventana | `10` |
+
+---
+
+## API – Endpoints principales
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| `POST` | `/auth/login` | Login (email, password) |
+| `GET` | `/auth/me` | Usuario actual (Bearer token) |
+| `POST` | `/auth/request-reset` | Solicitar recuperación de contraseña |
+| `POST` | `/auth/reset-password` | Restablecer contraseña con token |
+| `GET` | `/users` | Listar usuarios (GERENCIAL, DIRECCIÓN) |
+| `POST` | `/users` | Crear usuario |
+| `PUT` | `/users/:id` | Actualizar usuario |
+| `DELETE` | `/users/:id` | Eliminar usuario |
+| `POST` | `/users/:id/reset` | Resetear contraseña temporal |
+| `GET` | `/clientes/:numero` | Obtener cliente por NIT/CC |
+| `POST` | `/clientes` | Crear/actualizar cliente |
+| `GET` | `/clientes/exportar` | Exportar clientes a Excel |
+| `GET` | `/remisiones/siguiente-numero` | Siguiente consecutivo RM |
+| `POST` | `/remisiones` | Crear remisión y generar PDF |
+| `GET` | `/remisiones/:numero` | Consultar remisión (GERENCIAL) |
+| `GET` | `/remisiones/:numero/pdf` | Descargar PDF (GERENCIAL) |
+| `PUT` | `/remisiones/:numero` | Editar remisión (GERENCIAL) |
+
+---
+
+## Documentación adicional
+
+- `docs/paso-a-paso.md` — Guía de configuración y despliegue

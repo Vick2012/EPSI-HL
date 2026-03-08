@@ -38,7 +38,6 @@ const handleExport = async (req, res) => {
   return res.send(buffer);
 };
 
-router.get("/export", authMiddleware, handleExport);
 router.get("/exportar", authMiddleware, handleExport);
 
 router.get("/:numero", authMiddleware, async (req, res) => {

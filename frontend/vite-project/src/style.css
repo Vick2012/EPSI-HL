@@ -367,17 +367,6 @@ body {
   box-shadow: 0 8px 28px rgba(31, 63, 131, 0.12), 0 0 0 1px rgba(31, 63, 131, 0.08);
 }
 
-@keyframes loginCardIn {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 .login-page-title {
   margin: 0 0 4px 0;
   font-family: "Plus Jakarta Sans", system-ui, sans-serif;
@@ -1203,48 +1192,6 @@ label {
   display: none !important;
 }
 
-.cliente-validation-warning.hidden {
-  display: none !important;
-}
-
-/* Aviso de validación - cliente nuevo */
-.cliente-validation-warning {
-  margin: 16px 0;
-  padding: 20px 24px;
-  background: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%);
-  border: 2px solid #b3202d;
-  border-radius: 12px;
-  color: #b3202d;
-  font-size: 18px;
-  font-weight: 700;
-  text-align: center;
-  letter-spacing: 0.3px;
-  box-shadow: 0 4px 16px rgba(179, 32, 45, 0.15);
-}
-
-.cliente-validation-warning.hidden {
-  display: none !important;
-}
-
-/* Aviso grande para validación de cliente nuevo */
-.cliente-validation-warning {
-  margin: 16px 0;
-  padding: 20px 24px;
-  background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
-  border: 2px solid #b3202d;
-  border-radius: 12px;
-  color: #b3202d;
-  font-size: 18px;
-  font-weight: 700;
-  text-align: center;
-  letter-spacing: 0.3px;
-  box-shadow: 0 4px 16px rgba(179, 32, 45, 0.2);
-}
-
-.cliente-validation-warning.hidden {
-  display: none !important;
-}
-
 #remision-anulada-wrap {
   flex-direction: row;
   align-items: center;
@@ -1434,141 +1381,6 @@ select {
 .quick-access-btn:hover:not(:disabled) {
   background: rgba(31, 63, 131, 0.06);
   border-color: #1f3f83;
-  box-shadow: 0 4px 12px rgba(31, 63, 131, 0.12);
-}
-
-.quick-access-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  color: #94a3b8;
-}
-
-.quick-access-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  color: #1f3f83;
-}
-
-.quick-access-btn:disabled .quick-access-icon {
-  color: #94a3b8;
-}
-
-/* Acceso rápido - Inicio */
-.quick-access {
-  margin: 0;
-}
-
-.quick-access-title {
-  margin: 0 0 4px 0;
-  font-size: 20px;
-  font-weight: 700;
-  color: #1f3f83;
-  text-align: center;
-}
-
-.quick-access-subtitle {
-  margin: 0 0 20px 0;
-  font-size: 14px;
-  color: #64748b;
-  text-align: center;
-}
-
-.quick-access-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
-}
-
-.quick-access-btn {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 12px;
-  background: #ffffff;
-  color: #1f3f83;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-align: left;
-}
-
-.quick-access-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, rgba(31, 63, 131, 0.06) 0%, rgba(241, 154, 62, 0.08) 100%);
-  border-color: #1f3f83;
-  box-shadow: 0 4px 12px rgba(31, 63, 131, 0.12);
-  transform: translateY(-2px);
-}
-
-.quick-access-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  background: #f8fafc;
-}
-
-.quick-access-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  color: #1f3f83;
-  opacity: 0.85;
-}
-
-.quick-access-btn:hover:not(:disabled) .quick-access-icon {
-  opacity: 1;
-  color: #f19a3e;
-}
-
-/* Acceso rápido - Inicio */
-.quick-access {
-  margin: 0;
-}
-
-.quick-access-title {
-  margin: 0 0 4px 0;
-  font-size: 20px;
-  font-weight: 700;
-  color: #1f3f83;
-  text-align: center;
-}
-
-.quick-access-subtitle {
-  margin: 0 0 20px 0;
-  font-size: 14px;
-  color: #64748b;
-  text-align: center;
-}
-
-.quick-access-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
-}
-
-.quick-access-btn {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 12px;
-  background: #ffffff;
-  color: #1f3f83;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-align: left;
-}
-
-.quick-access-btn:hover:not(:disabled) {
-  border-color: #1f3f83;
-  background: rgba(31, 63, 131, 0.06);
   box-shadow: 0 4px 12px rgba(31, 63, 131, 0.12);
 }
 
