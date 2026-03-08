@@ -5,8 +5,9 @@ import { exportClientes, fetchCliente, saveCliente, type ClientePayload } from "
 import {
   generarRemisionPdf,
   fetchRemision,
-  updateRemision,
   fetchRemisionPdf,
+  fetchSiguienteNumero,
+  updateRemision,
   type RemisionPayload,
 } from "./api/remisiones";
 import { createUser, deleteUser, fetchUsers, resetUserPassword, updateUser } from "./api/users";
@@ -28,20 +29,97 @@ import { calcularDv, formatCurrency } from "./utils/format";
 const app = document.querySelector<HTMLDivElement>("#app")!;
 
 app.innerHTML = `
-  <div class="page">
+  <!-- Página de login - Sistema IRIS (card centrada, imagen de colaboradores visible) -->
+  <div id="login-page" class="login-page">
+    <div class="login-page-bg">
+      <div class="login-page-overlay"></div>
+    </div>
+    <header class="login-header">
+      <div class="login-header-brand">
+        <span class="login-header-title">Sistema IRIS</span>
+        <span class="login-header-sub">Sistema de gestión, de consulta e información</span>
+      </div>
+    </header>
+    <main class="login-main">
+      <div class="login-page-card">
+        <h1 class="login-page-title">Acceso al sistema</h1>
+        <p class="login-page-subtitle">Ingrese sus credenciales para continuar</p>
+        <div class="login-input-wrap">
+          <label class="login-label">Usuario o correo electrónico</label>
+          <input id="login-email" type="text" placeholder="admin o correo@empresa.com" autocomplete="username" />
+        </div>
+        <div class="login-input-wrap password-field">
+          <label class="login-label">Contraseña</label>
+          <input id="login-password" type="password" placeholder="••••••••" autocomplete="current-password" />
+          <button id="login-eye" class="input-icon-btn" type="button" aria-label="Mostrar contraseña"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
+        <p class="login-forgot-wrap"><button id="login-forgot" class="login-link-inline" type="button">Recuperar contraseña</button></p>
+        <div id="login-error" class="login-error hidden"></div>
+        <button id="login-submit" class="login-btn-continuar">Ingresar</button>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal recuperar contraseña (a nivel raíz para verse sobre login-page) -->
+  <section id="reset-modal" class="login-modal hidden">
+    <div class="login-card">
+      <h2>Recuperar contraseña</h2>
+      <label>Email
+        <input id="reset-email" type="email" placeholder="tu@correo.com" />
+      </label>
+      <label>Nueva contraseña
+        <div class="password-field">
+          <input id="reset-password" type="password" placeholder="••••••••" />
+          <button id="reset-eye" class="icon-button" type="button" aria-label="Mostrar contraseña"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        </div>
+      </label>
+      <label>Token (solo si aplica)
+        <input id="reset-token" type="text" placeholder="Token recibido" />
+      </label>
+      <div id="reset-status" class="status hidden"></div>
+      <div class="login-actions">
+        <button id="reset-request" class="primary">Enviar enlace</button>
+        <button id="reset-apply" class="secondary">Restablecer</button>
+        <button id="reset-cancel" class="secondary">Cancelar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- App principal (solo visible tras login) -->
+  <div id="app-content" class="page hidden">
     <aside class="sidebar">
       <div class="brand compact">
         <div class="brand-row">
           <img id="brand-logo" class="brand-logo" alt="EPSI HL" />
-          <div class="logo">EPSI HL</div>
+          <div class="logo">EPSI HL S.A.S</div>
         </div>
         <div class="subtitle">Sistema interno</div>
       </div>
       <nav class="nav">
-        <button class="nav-item active" data-go-remisiones>Remisiones</button>
-        <button class="nav-item" disabled>Turnos</button>
-        <button class="nav-item" data-go-usuarios>Usuarios</button>
-        <button class="nav-item" disabled>BI</button>
+        <button class="nav-item active" data-go-inicio data-nav="inicio">
+          <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+          INICIO
+        </button>
+        <button class="nav-item" data-go-remisiones data-nav="remisiones">
+          <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>
+          REMISIONES
+        </button>
+        <button class="nav-item" disabled data-nav="turno">
+          <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+          TURNO
+        </button>
+        <button class="nav-item" disabled data-nav="reportes">
+          <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg></span>
+          REPORTES
+        </button>
+        <button class="nav-item" disabled data-nav="bi">
+          <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+          INTELIGENCIA DE NEGOCIO (BI)
+        </button>
+        <button class="nav-item" data-go-usuarios data-nav="usuarios">
+          <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+          USUARIOS Y CONTRASEÑAS
+        </button>
       </nav>
       <div class="sidebar-footer">
         <span class="env-pill">${import.meta.env.PROD ? "Prod" : "Dev"}</span>
@@ -56,71 +134,43 @@ app.innerHTML = `
         </div>
         <div class="header-right">
           <span id="current-user" class="user-pill hidden"></span>
-          <button id="back-button" class="header-back-btn" aria-label="Volver">
+          <button id="back-button" class="header-back-btn" aria-label="Cerrar Sesión">
             <span class="header-back-icon" aria-hidden="true">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
             </span>
-            Volver
+            Cerrar Sesión
           </button>
         </div>
       </header>
 
       <main class="content">
-      <section id="login-modal" class="login-modal hidden">
-        <div class="login-card login-split">
-          <div class="login-form-panel">
-            <h2>Iniciar sesión</h2>
-            <p class="login-subtitle">Ingresa tus credenciales para acceder</p>
-            <div class="login-input-wrap">
-              <input id="login-email" type="email" placeholder="correo@epsihl.com" autocomplete="email" />
-              <span class="input-icon" aria-hidden="true">✉</span>
-            </div>
-            <div class="login-input-wrap password-field">
-              <input id="login-password" type="password" placeholder="••••••••" autocomplete="current-password" />
-              <button id="login-eye" class="input-icon-btn" type="button" aria-label="Mostrar contraseña">👁</button>
-            </div>
-            <div id="login-error" class="login-error hidden"></div>
-            <button id="login-submit" class="login-btn-primary">Ingresar</button>
-            <div class="login-links">
-              <button id="login-forgot" class="login-link" type="button">¿Olvidaste la contraseña?</button>
-              <button id="login-register" class="login-link" type="button">Crear usuario</button>
-            </div>
-            <button id="login-cancel" class="login-btn-ghost" type="button">Cancelar</button>
-          </div>
-          <div class="login-welcome-panel">
-            <div class="welcome-content">
-              <h3>Bienvenido</h3>
-              <p class="welcome-brand">Sistema IRIS</p>
-              <p class="welcome-desc">Gestión integral al servicio de nuestros colaboradores.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="reset-modal" class="login-modal hidden">
-        <div class="login-card">
-          <h2>Recuperar contraseña</h2>
-          <label>Email
-            <input id="reset-email" type="email" placeholder="tu@correo.com" />
-          </label>
-          <label>Nueva contraseña
-            <div class="password-field">
-              <input id="reset-password" type="password" placeholder="••••••••" />
-              <button id="reset-eye" class="icon-button" type="button">👁</button>
-            </div>
-          </label>
-          <label>Token (solo si aplica)
-            <input id="reset-token" type="text" placeholder="Token recibido" />
-          </label>
-          <div id="reset-status" class="status hidden"></div>
-          <div class="login-actions">
-            <button id="reset-request" class="primary">Enviar enlace</button>
-            <button id="reset-apply" class="secondary">Restablecer</button>
-            <button id="reset-cancel" class="secondary">Cancelar</button>
-          </div>
-        </div>
-      </section>
       <section id="home-view" class="home">
+        <section class="quick-access card">
+          <h2 class="quick-access-title">Acceso rápido</h2>
+          <p class="quick-access-subtitle">Navega directamente a cualquier módulo</p>
+          <div class="quick-access-grid">
+            <button class="quick-access-btn" data-go-remisiones>
+              <span class="quick-access-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>
+              <span>Remisiones</span>
+            </button>
+            <button class="quick-access-btn" disabled>
+              <span class="quick-access-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+              <span>Turno</span>
+            </button>
+            <button class="quick-access-btn" disabled>
+              <span class="quick-access-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg></span>
+              <span>Reportes</span>
+            </button>
+            <button class="quick-access-btn" disabled>
+              <span class="quick-access-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+              <span>Inteligencia de negocio (BI)</span>
+            </button>
+            <button class="quick-access-btn" data-go-usuarios>
+              <span class="quick-access-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+              <span>Usuarios y contraseñas</span>
+            </button>
+          </div>
+        </section>
         <section class="hero">
           <div class="hero-content">
             <span class="pill">Plataforma diseñada para EPSI HL</span>
@@ -142,7 +192,7 @@ app.innerHTML = `
                 <strong>PDF</strong>
                 <span>Formato oficial</span>
               </div>
-              <div>
+  <div>
                 <strong>BI</strong>
                 <span>Indicadores</span>
               </div>
@@ -255,6 +305,12 @@ app.innerHTML = `
                   <label>Teléfono
                     <input id="cliente-telefono" type="text" placeholder="Teléfono" />
                   </label>
+                  <label>Email
+                    <input id="cliente-email" type="email" placeholder="correo@empresa.com" />
+                  </label>
+                </div>
+                <div id="cliente-validation-warning" class="cliente-validation-warning hidden">
+                  Para Guardar Cliente Nuevo debe llenar todos los campos
                 </div>
                 <div class="client-actions">
                   <button id="guardar-cliente" class="secondary">Guardar cliente</button>
@@ -328,9 +384,9 @@ app.innerHTML = `
           </div>
 
           <div class="wizard-nav">
-            <button id="wizard-prev" class="secondary wizard-btn-prev hidden" type="button">← Anterior</button>
+            <button id="wizard-prev" class="secondary wizard-btn-prev hidden" type="button">Anterior</button>
             <span id="wizard-error" class="wizard-nav-error"></span>
-            <button id="wizard-next" class="primary wizard-btn-next" type="button">Siguiente →</button>
+            <button id="wizard-next" class="primary wizard-btn-next" type="button">Siguiente</button>
           </div>
         </div>
       </section>
@@ -424,6 +480,8 @@ const clienteNombreInput = app.querySelector<HTMLInputElement>("#cliente-nombre"
 const clienteDireccionInput = app.querySelector<HTMLInputElement>("#cliente-direccion")!;
 const clienteCiudadInput = app.querySelector<HTMLInputElement>("#cliente-ciudad")!;
 const clienteTelefonoInput = app.querySelector<HTMLInputElement>("#cliente-telefono")!;
+const clienteEmailInput = app.querySelector<HTMLInputElement>("#cliente-email")!;
+const clienteValidationWarning = app.querySelector<HTMLDivElement>("#cliente-validation-warning")!;
 const remisionNumeroInput = app.querySelector<HTMLInputElement>("#remision-numero")!;
 const remisionAnuladaWrap = app.querySelector<HTMLLabelElement>("#remision-anulada-wrap")!;
 const remisionAnuladaInput = app.querySelector<HTMLInputElement>("#remision-anulada")!;
@@ -440,15 +498,12 @@ let wizardCurrentStep = 1;
 const WIZARD_MAX_STEP = 3;
 const usersStatus = app.querySelector<HTMLSpanElement>("#users-status")!;
 const usersList = app.querySelector<HTMLDivElement>("#users-list")!;
-const loginModal = app.querySelector<HTMLDivElement>("#login-modal")!;
 const loginEmail = app.querySelector<HTMLInputElement>("#login-email")!;
 const loginPassword = app.querySelector<HTMLInputElement>("#login-password")!;
 const loginEye = app.querySelector<HTMLButtonElement>("#login-eye")!;
 const loginError = app.querySelector<HTMLDivElement>("#login-error")!;
 const loginSubmit = app.querySelector<HTMLButtonElement>("#login-submit")!;
-const loginCancel = app.querySelector<HTMLButtonElement>("#login-cancel")!;
 const loginForgot = app.querySelector<HTMLButtonElement>("#login-forgot")!;
-const loginRegister = app.querySelector<HTMLButtonElement>("#login-register")!;
 const resetModal = app.querySelector<HTMLDivElement>("#reset-modal")!;
 const resetEmail = app.querySelector<HTMLInputElement>("#reset-email")!;
 const resetPassword = app.querySelector<HTMLInputElement>("#reset-password")!;
@@ -477,11 +532,59 @@ logoImg.addEventListener("error", () => {
   logoImg.style.display = "none";
 });
 
+const setActiveNav = (navId: "inicio" | "remisiones" | "turno" | "reportes" | "bi" | "usuarios") => {
+  app.querySelectorAll(".nav-item").forEach((btn) => {
+    btn.classList.remove("active");
+    if (btn.getAttribute("data-nav") === navId) {
+      btn.classList.add("active");
+    }
+  });
+};
+
 const goHome = () => {
   homeView.classList.remove("hidden");
   remisionView.classList.add("hidden");
   usersView.classList.add("hidden");
   backButton.disabled = true;
+  setActiveNav("inicio");
+};
+
+/** Limpia el formulario de remisión al cambiar de usuario (evita que persistan datos del usuario anterior) */
+const clearRemisionForm = () => {
+  exitEditMode();
+  clienteNitInput.value = "";
+  clienteDvInput.value = "";
+  clienteTipoSelect.value = "CC";
+  clienteNombreInput.value = "";
+  clienteDireccionInput.value = "";
+  clienteCiudadInput.value = "";
+  clienteTelefonoInput.value = "";
+  resetItemsTable();
+  addItemRow();
+  (app.querySelector<HTMLSelectElement>("#remision-pago")!).value = "efectivo";
+  (app.querySelector<HTMLInputElement>("#remision-observaciones")!).value = "";
+  (app.querySelector<HTMLInputElement>("#remision-total")!).value = "0";
+  remisionAnuladaInput.checked = false;
+  buscarRemisionNumeroInput.value = "";
+  buscarRemisionStatus.textContent = "";
+  clienteStatusEl.textContent = "";
+  statusEl.textContent = "";
+  cargarConsecutivo();
+  recalc();
+  goToWizardStep(1);
+};
+
+const loginPageEl = app.querySelector<HTMLDivElement>("#login-page")!;
+const appContentEl = app.querySelector<HTMLDivElement>("#app-content")!;
+
+const showLoginPage = () => {
+  loginPageEl.classList.remove("hidden");
+  appContentEl.classList.add("hidden");
+};
+
+const showAppContent = () => {
+  loginPageEl.classList.add("hidden");
+  appContentEl.classList.remove("hidden");
 };
 
 const openLogin = (afterLogin?: () => void) => {
@@ -490,20 +593,18 @@ const openLogin = (afterLogin?: () => void) => {
   loginError.classList.add("hidden");
   loginError.textContent = "";
   pendingAction = afterLogin || null;
-  loginModal.classList.remove("hidden");
-  loginModal.style.display = "flex";
+  showLoginPage();
 };
 
 const closeLogin = () => {
-  loginModal.classList.add("hidden");
-  loginModal.style.removeProperty("display");
+  showAppContent();
 };
 
 const applyRole = (role: string | null) => {
   const isGerencial = role === "GERENCIAL";
   const isEditing = Boolean(editingRemisionNumero);
   app.querySelectorAll<HTMLButtonElement>("[data-go-usuarios]").forEach((button) => {
-    button.disabled = false;
+    button.disabled = !canAccessUsersModule(role);
   });
   remisionNumeroInput.readOnly = !isGerencial || isEditing;
   remisionAnuladaWrap.classList.toggle("hidden", !isGerencial);
@@ -578,7 +679,10 @@ const login = async () => {
     if (data.role) {
       setRole(data.role);
       applyRole(data.role);
+    } else {
+      await refreshRole();
     }
+    clearRemisionForm();
     currentUserEl.textContent = `Usuario: ${data.email}`;
     currentUserEl.classList.remove("hidden");
     statusEl.textContent = "Sesión iniciada.";
@@ -596,7 +700,16 @@ const login = async () => {
   }
 };
 
-const cargarConsecutivo = () => {
+const cargarConsecutivo = async () => {
+  const token = getToken();
+  if (token) {
+    try {
+      const siguiente = await fetchSiguienteNumero(token);
+      setConsecutivo(siguiente);
+    } catch (_) {
+      /* usar localStorage como fallback */
+    }
+  }
   remisionNumeroInput.value = formatConsecutivo(getConsecutivo());
 };
 
@@ -621,6 +734,7 @@ type Cliente = {
   direccion?: string;
   ciudad?: string;
   telefono?: string;
+  email?: string;
 };
 
 const actualizarDv = () => {
@@ -648,7 +762,7 @@ const saveClienteDb = async (cliente: Cliente) => {
     ciudad: cliente.ciudad || null,
     direccion: cliente.direccion || null,
     telefono: cliente.telefono || null,
-    email: "",
+    email: cliente.email || null,
   };
   const response = await saveCliente(payload, token);
   return response.ok;
@@ -661,6 +775,7 @@ const llenarCliente = (cliente: Record<string, string>) => {
   clienteDireccionInput.value = cliente.direccion || "";
   clienteCiudadInput.value = cliente.ciudad || "";
   clienteTelefonoInput.value = cliente.telefono || "";
+  clienteEmailInput.value = cliente.email || "";
   clienteDvInput.value = cliente.dv || calcularDv(clienteNitInput.value);
 };
 
@@ -669,6 +784,7 @@ const limpiarCliente = () => {
   clienteDireccionInput.value = "";
   clienteCiudadInput.value = "";
   clienteTelefonoInput.value = "";
+  clienteEmailInput.value = "";
   clienteDvInput.value = "";
 };
 
@@ -683,9 +799,11 @@ clienteNitInput.addEventListener("blur", async () => {
   const cliente = await fetchClienteDb(nit);
   if (cliente) {
     llenarCliente(cliente);
+    clienteValidationWarning.classList.add("hidden");
     clienteStatusEl.textContent = "Cliente encontrado y cargado.";
   } else {
     limpiarCliente();
+    clienteValidationWarning.classList.add("hidden");
     clienteStatusEl.textContent = "Cliente no encontrado. Puedes guardarlo.";
   }
 });
@@ -694,17 +812,37 @@ guardarClienteBtn.addEventListener("click", async () => {
   const nit = clienteNitInput.value.trim();
   if (!nit) {
     clienteStatusEl.textContent = "Ingresa el NIT para guardar.";
+    clienteValidationWarning.classList.add("hidden");
     return;
   }
   actualizarDv();
+  const nombre = clienteNombreInput.value.trim();
+  const direccion = clienteDireccionInput.value.trim();
+  const ciudad = clienteCiudadInput.value.trim();
+  const telefono = clienteTelefonoInput.value.trim();
+  const email = clienteEmailInput.value.trim();
+
+  const clienteExistente = await fetchClienteDb(nit);
+  if (!clienteExistente) {
+    const camposRequeridos = [nombre, direccion, ciudad, telefono, email];
+    const faltanCampos = camposRequeridos.some((v) => !v);
+    if (faltanCampos) {
+      clienteValidationWarning.classList.remove("hidden");
+      clienteStatusEl.textContent = "";
+      return;
+    }
+  }
+  clienteValidationWarning.classList.add("hidden");
+
   const cliente = {
     nit,
     dv: clienteDvInput.value.trim(),
     tipoDocumento: clienteTipoSelect.value,
-    nombre: clienteNombreInput.value.trim(),
-    direccion: clienteDireccionInput.value.trim(),
-    ciudad: clienteCiudadInput.value.trim(),
-    telefono: clienteTelefonoInput.value.trim(),
+    nombre,
+    direccion,
+    ciudad,
+    telefono,
+    email,
   };
   const ok = await saveClienteDb(cliente);
   clienteStatusEl.textContent = ok
@@ -805,12 +943,13 @@ const validateWizardStep = (step: number): boolean => {
   return true;
 };
 
-const goRemisiones = () => {
+const goRemisiones = async () => {
   homeView.classList.add("hidden");
   remisionView.classList.remove("hidden");
   usersView.classList.add("hidden");
   backButton.disabled = false;
-  cargarConsecutivo();
+  setActiveNav("remisiones");
+  await cargarConsecutivo();
   applyRole(getRole());
   goToWizardStep(1);
 };
@@ -830,8 +969,20 @@ const goUsers = () => {
   remisionView.classList.add("hidden");
   usersView.classList.remove("hidden");
   backButton.disabled = false;
+  setActiveNav("usuarios");
   loadUsers();
 };
+
+app.querySelectorAll("[data-go-inicio]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const token = getToken();
+    if (!token) {
+      openLogin(goHome);
+      return;
+    }
+    goHome();
+  });
+});
 
 app.querySelectorAll("[data-go-remisiones]").forEach((button) => {
   button.addEventListener("click", () => {
@@ -859,7 +1010,7 @@ backButton.addEventListener("click", () => {
   clearSession();
   currentUserEl.textContent = "";
   currentUserEl.classList.add("hidden");
-  goHome();
+  showLoginPage();
 });
 
 const recalc = () => {
@@ -874,9 +1025,7 @@ const recalc = () => {
   });
 
   const totalInput = Number(app.querySelector<HTMLInputElement>("#remision-total")!.value || 0);
-  const ivaPct = 19;
-  const ivaCalc = totalInput * (ivaPct / 100);
-  const subtotal = totalInput - ivaCalc;
+  const subtotal = totalInput / 1.19;
   const total = totalInput;
 
   subtotalEl.textContent = formatCurrency(subtotal);
@@ -1031,8 +1180,8 @@ const buildRemisionPayload = (): RemisionPayload => {
 
   const total = Number(app.querySelector<HTMLInputElement>("#remision-total")!.value || 0);
   const ivaPorcentaje = 19;
-  const iva = total * (ivaPorcentaje / 100);
-  const subtotal = total - iva;
+  const subtotal = total / 1.19;
+  const iva = total - subtotal;
 
   return {
     numero: (app.querySelector<HTMLInputElement>("#remision-numero")!.value || "0001").trim(),
@@ -1104,16 +1253,14 @@ app.querySelector("#generar")!.addEventListener("click", async () => {
     const url = URL.createObjectURL(pdf);
     window.open(url, "_blank");
     statusEl.textContent = "PDF generado.";
-    const siguiente = getConsecutivo() + 1;
-    setConsecutivo(siguiente);
-    cargarConsecutivo();
+    await cargarConsecutivo();
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") {
       statusEl.textContent = "Debes iniciar sesión para generar remisiones.";
       openLogin();
       return;
     }
-    statusEl.textContent = "Error al generar PDF.";
+    statusEl.textContent = error instanceof Error ? error.message : "Error al generar PDF.";
   }
 });
 
@@ -1141,8 +1288,8 @@ const loadUsers = async () => {
             <button class="secondary" data-reset-user="${user.id}">Reset</button>
             <button class="secondary" data-delete-user="${user.id}">Eliminar</button>
           </div>
-        </div>
-      `
+  </div>
+`
     )
     .join("");
     usersStatus.textContent = "";
@@ -1271,19 +1418,37 @@ if (savedUser) {
 applyRole(getRole());
 refreshRole();
 
+/** Al cargar: si hay token válido mostrar app, si no mostrar login */
+const checkAuthAndInit = async () => {
+  const token = getToken();
+  if (!token) {
+    showLoginPage();
+    return;
+  }
+  try {
+    const response = await fetchMe(token);
+    if (response.ok) {
+      const data = await response.json();
+      if (data?.role) setRole(data.role);
+      if (data?.email) setUserEmail(data.email);
+      applyRole(getRole());
+      showAppContent();
+    } else {
+      clearSession();
+      showLoginPage();
+    }
+  } catch {
+    clearSession();
+    showLoginPage();
+  }
+};
+checkAuthAndInit();
+
 loginSubmit.addEventListener("click", login);
-loginCancel.addEventListener("click", closeLogin);
 loginEye.addEventListener("click", () => {
   loginPassword.type = loginPassword.type === "password" ? "text" : "password";
 });
-loginForgot.addEventListener("click", () => {
-  closeLogin();
-  openReset();
-});
-loginRegister.addEventListener("click", () => {
-  statusEl.textContent = "La creación de usuarios la gestiona GERENCIAL/DIRECCION/SUPERVISION.";
-  closeLogin();
-});
+loginForgot.addEventListener("click", () => openReset());
 
 resetCancel.addEventListener("click", closeReset);
 resetEye.addEventListener("click", () => {

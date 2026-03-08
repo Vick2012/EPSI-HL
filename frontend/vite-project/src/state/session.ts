@@ -22,7 +22,7 @@ export const clearSession = () => {
 };
 
 export const canAccessUsersModule = (role: string | null) =>
-  role === "GERENCIAL" || role === "DIRECCION" || role === "SUPERVISION";
+  role === "GERENCIAL" || role === "DIRECCION";
 
 export const getConsecutivo = () => {
   const raw = window.localStorage.getItem(CONSECUTIVO_KEY);

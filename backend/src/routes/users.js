@@ -6,7 +6,7 @@ const { validateUserCreate, validateUserUpdate } = require("../validators/users"
 
 const router = express.Router();
 
-const USER_MANAGEMENT_ROLES = ["GERENCIAL", "DIRECCION", "SUPERVISION"];
+const USER_MANAGEMENT_ROLES = ["GERENCIAL", "DIRECCION"];
 
 router.get("/", authMiddleware, requireAnyRole(USER_MANAGEMENT_ROLES), async (_req, res) => {
   const db = await getDb();

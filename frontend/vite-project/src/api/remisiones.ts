@@ -44,6 +44,15 @@ export async function generarRemisionPdf(payload: RemisionPayload) {
     if (response.status === 401) {
       throw new Error("UNAUTHORIZED");
     }
+    if (response.status === 409) {
+      const text = await response.text();
+      let msg = "La remisión ya existe. Usa otro número de remisión.";
+      try {
+        const json = JSON.parse(text);
+        if (json?.message) msg = json.message;
+      } catch (_) {}
+      throw new Error(msg);
+    }
     const text = await response.text();
     throw new Error(text || "Error generando PDF");
   }
@@ -72,4 +81,13 @@ export async function fetchRemisionPdf(numero: string, token: string) {
     headers: { Authorization: `Bearer ${token}` },
   });
   return response;
+}
+
+export async function fetchSiguienteNumero(token: string): Promise<number> {
+  const response = await fetch(`${API_BASE}/remisiones/siguiente-numero`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) return 1;
+  const data = await response.json();
+  return data?.siguiente ?? 1;
 }

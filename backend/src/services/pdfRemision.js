@@ -31,8 +31,8 @@ function drawBox(doc, x, y, w, h) {
 }
 
 function textCenteredInRow(doc, text, x, y, height, options = {}) {
-  const fontSize = doc._fontSize || 9;
-  const textY = y + (height - fontSize) / 2;
+  const textHeight = doc.heightOfString(String(text), options);
+  const textY = y + Math.max(0, (height - textHeight) / 2);
   doc.text(text, x, textY, options);
 }
 
@@ -79,83 +79,111 @@ function drawLogoWatermark(doc, logoPath) {
 function drawHeader(doc, remision, logoPath) {
   const left = MARGIN;
   const top = MARGIN;
-  const rightX = PAGE_WIDTH - 220;
+  const logoOffset = 28; // Logo más abajo
+  const blockTop = top + logoOffset;
+  const rightBlockOffset = 12; // Tabla remisión/fecha más abajo
+  const logoWidth = 140;
+  const gap = 48; // Más espacio entre logo y título (evita solapamiento)
+  const centerX = left + logoWidth + gap;
+  const boxWidth = 138; // Más estrecho para que el nombre quepa en una línea
+  const row1H = 28; // Altura sección N° remisión
+  const row2H = 42; // Altura sección fecha
+  const rightBlockH = row1H + row2H; // Bloque unificado
+  const rightX = PAGE_WIDTH - MARGIN - boxWidth - 8; // Más espacio para nombre empresa
+  const centerWidth = rightX - centerX - 12;
+  const nameWidth = rightX - centerX - 8;
+  const rightBlockTop = blockTop + rightBlockOffset;
+  const nameTop = top + 12; // Nombre de empresa más arriba (no bajado)
 
+  // --- Logo ---
   let logoDrawn = false;
   if (logoPath) {
     try {
-      doc.image(logoPath, left, top + 25, { width: 140 });
+      doc.image(logoPath, left, blockTop, { width: logoWidth });
       logoDrawn = true;
     } catch (error) {
       logoDrawn = false;
     }
   }
   if (!logoDrawn) {
-    doc
-      .fontSize(11)
-      .fillColor(COLORS.blue)
-      .text("EPSI HL S.A.S", left + 4, top + 10, { width: 110 });
+    doc.fontSize(12).fillColor(COLORS.blue);
+    doc.text("EPSI HL", left, blockTop + 4, { width: logoWidth - 4 });
+    doc.fontSize(8).fillColor(COLORS.blue);
+    doc.text("S.A.S", left, blockTop + 16, { width: logoWidth - 4 });
   }
 
-  const headerTextX = left + 148;
-  const headerTextY = top + 4;
-  const headerTextWidth = Math.max(200, rightX - headerTextX - 10);
-  doc.fontSize(7.1).fillColor(COLORS.blue);
-  const headerLines = [
-    "EMPRESA PRESTADORA DE SERVICIOS INTEGRALES HL S.A.S",
+  // --- Razón social: una sola línea, negrita, fuente 8pt para que quepa ---
+  doc.font("Helvetica-Bold").fontSize(10).fillColor(COLORS.blue);
+  doc.text("EMPRESA PRESTADORA DE SERVICIOS INTEGRALES HL S.A.S", centerX, nameTop, {
+    align: "left",
+    width: nameWidth,
+  });
+  doc.font("Helvetica"); // Restaurar fuente normal
+
+  // --- Bloque unificado: N° remisión + Fecha (una sola caja, más abajo) ---
+  drawBox(doc, rightX, rightBlockTop, boxWidth, rightBlockH);
+  doc.strokeColor(COLORS.blue).lineWidth(0.5);
+  doc.moveTo(rightX, rightBlockTop + row1H).lineTo(rightX + boxWidth, rightBlockTop + row1H).stroke();
+  doc.strokeColor(COLORS.blue).lineWidth(1);
+
+  doc.fontSize(7).fillColor(COLORS.gray);
+  doc.text("N° DE REMISION", rightX, rightBlockTop + 2, { align: "center", width: boxWidth });
+  doc.fontSize(14).fillColor(COLORS.red);
+  doc.text(String(remision.numero || ""), rightX, rightBlockTop + 10, {
+    align: "center",
+    width: boxWidth,
+  });
+
+  const fecha = new Date(remision.fecha);
+  const day = `${fecha.getDate()}`.padStart(2, "0");
+  const month = `${fecha.getMonth() + 1}`.padStart(2, "0");
+  const year = `${fecha.getFullYear()}`;
+  doc.fontSize(7).fillColor(COLORS.gray);
+  doc.text("FECHA", rightX, rightBlockTop + row1H + 2, { align: "center", width: boxWidth });
+  const cellW = boxWidth / 3;
+  const cellH = 16;
+  const cellY = rightBlockTop + row1H + 12;
+  drawBox(doc, rightX, cellY, cellW, cellH);
+  drawBox(doc, rightX + cellW, cellY, cellW, cellH);
+  drawBox(doc, rightX + cellW * 2, cellY, cellW, cellH);
+  doc.fontSize(8).fillColor(COLORS.black);
+  const textY = cellY + (cellH - 8) / 2;
+  doc.text(day, rightX, textY, { align: "center", width: cellW });
+  doc.text(month, rightX + cellW, textY, { align: "center", width: cellW });
+  doc.text(year, rightX + cellW * 2, textY, { align: "center", width: cellW });
+
+  // --- Datos de contacto: junto al bloque derecho (no abajo) ---
+  const contactTop = blockTop + 16; // Justo debajo del nombre, alineado con bloque derecho
+  doc.fontSize(7.5).fillColor(COLORS.gray);
+  const contactLines = [
     "NIT 900950697 - 3",
     "Calle 2 # 18-93 Parque Industrial San Jorge Oficina 276",
     "Mosquera - Cundinamarca",
     "313 402 4369 / 314 280 1035",
     "facturacion@epsihl.com.co",
   ];
-  doc.text(headerLines.join("\n"), headerTextX, headerTextY, {
-    width: headerTextWidth,
-    lineGap: 4,
+  const contactHeight = doc.heightOfString(contactLines.join("\n"), { width: centerWidth, lineGap: 2 });
+  doc.text(contactLines.join("\n"), centerX, contactTop, {
+    width: centerWidth,
+    lineGap: 2,
+    align: "left",
   });
 
-  drawBox(doc, rightX, top + 24, 180, 40);
-  doc
-    .fontSize(10)
-    .fillColor(COLORS.gray)
-    .text("N° DE REMISION", rightX, top + 28, { align: "center", width: 180 });
-  doc
-    .fontSize(16)
-    .fillColor(COLORS.red)
-    .text(`${remision.numero}`, rightX, top + 45, {
-      align: "center",
-      width: 180,
-    });
-
-  drawBox(doc, rightX, top + 70, 180, 36);
-  doc
-    .fontSize(9)
-    .fillColor(COLORS.gray)
-    .text("FECHA", rightX, top + 72, { align: "center", width: 180 });
-
-  const fecha = new Date(remision.fecha);
-  const day = `${fecha.getDate()}`.padStart(2, "0");
-  const month = `${fecha.getMonth() + 1}`.padStart(2, "0");
-  const year = `${fecha.getFullYear()}`;
-
-  const cellY = top + 84;
-  const cellH = 22;
-  drawBox(doc, rightX, cellY, 60, cellH);
-  drawBox(doc, rightX + 60, cellY, 60, cellH);
-  drawBox(doc, rightX + 120, cellY, 60, cellH);
-  doc.fontSize(9).fillColor(COLORS.black);
-  const textY = cellY + (cellH - 9) / 2;
-  doc.text(day, rightX, textY, { align: "center", width: 60 });
-  doc.text(month, rightX + 60, textY, { align: "center", width: 60 });
-  doc.text(year, rightX + 120, textY, { align: "center", width: 60 });
+  // Línea separadora: debajo del bloque derecho y contacto
+  const contentBottom = Math.max(contactTop + contactHeight + 4, rightBlockTop + rightBlockH + 4);
+  const headerBottom = contentBottom + 6;
+  doc.strokeColor(COLORS.blue).lineWidth(0.5);
+  doc.moveTo(left, headerBottom).lineTo(PAGE_WIDTH - left, headerBottom).stroke();
+  doc.strokeColor(COLORS.blue).lineWidth(1);
 }
 
 function drawCliente(doc, remision) {
-  const startY = 140;
+  const startY = 150;
   const left = MARGIN;
   const width = PAGE_WIDTH - MARGIN * 2;
 
-  drawBox(doc, left, startY, width, 90);
+  const clienteBoxHeight = 106; // Más alto para evitar solapamiento de textos
+  drawBox(doc, left, startY, width, clienteBoxHeight);
   doc
     .rect(left, startY, width, 16)
     .fill(COLORS.blue)
@@ -167,7 +195,7 @@ function drawCliente(doc, remision) {
 
   doc.fillColor(COLORS.black).fontSize(9);
   const nitLabel = remision.cliente.dv
-    ? `${remision.cliente.nit}-${remision.cliente.dv}`
+    ? `${remision.cliente.nit}  -  ${remision.cliente.dv}`
     : remision.cliente.nit;
   const rawTipoDocumento =
     remision.cliente.tipoDocumento || remision.cliente.tipo_documento || "";
@@ -204,25 +232,28 @@ function drawCliente(doc, remision) {
   ];
 
   const rowTop = startY + 16;
-  const rowHeight = 14;
+  const rowHeight = 18; // Más espacio entre filas para evitar solapamiento
   for (let i = 1; i < labels.length; i += 1) {
     const lineY = rowTop + i * rowHeight;
     doc.moveTo(left, lineY).lineTo(left + width, lineY).stroke(COLORS.blue);
   }
   const separatorX = left + 160;
-  doc.moveTo(separatorX, rowTop).lineTo(separatorX, startY + 90).stroke(COLORS.blue);
+  doc.moveTo(separatorX, rowTop).lineTo(separatorX, startY + clienteBoxHeight).stroke(COLORS.blue);
 
-  let y = startY + 20;
+  let y = rowTop;
+  const cellOpts = { align: "left", lineGap: 0 };
   labels.forEach(([label, value]) => {
-    textCenteredInRow(doc, label, left + 6, y, rowHeight);
-    textCenteredInRow(doc, value, left + 170, y, rowHeight, { width: 360 });
+    textCenteredInRow(doc, label, left + 6, y, rowHeight, { ...cellOpts, width: 150 });
+    textCenteredInRow(doc, value, left + 170, y, rowHeight, { ...cellOpts, width: 360 });
     y += rowHeight;
   });
 }
 
 function drawItems(doc, remision) {
   const left = MARGIN;
-  const top = 240;
+  const clienteEndY = 150 + 106;
+  const gapEntreSecciones = 18;
+  const top = clienteEndY + gapEntreSecciones;
   const width = PAGE_WIDTH - MARGIN * 2;
   const rowHeight = 20;
   const rows = Math.max(remision.items.length, 1);
@@ -352,9 +383,13 @@ function drawPagoFirma(doc, remision, logoPath) {
   doc.fontSize(9).fillColor(COLORS.blue);
   textCenteredInRow(doc, "RECIBE CONFORME:", left + 6, top + 70, 60);
   const lineY = top + 110;
-  doc.moveTo(left + 90, lineY).lineTo(left + 300, lineY).stroke(COLORS.blue);
+  const recibeAreaLeft = left + 100; // Inicio del área (después del label)
+  const recibeAreaWidth = 230; // Ancho para línea y texto (centrado)
+  const recibeCenter = recibeAreaLeft + recibeAreaWidth / 2;
+  const lineLen = 170;
+  doc.moveTo(recibeCenter - lineLen / 2, lineY).lineTo(recibeCenter + lineLen / 2, lineY).stroke(COLORS.blue);
   doc.fontSize(8).fillColor(COLORS.gray);
-  textCenteredInRow(doc, "Recibe Conforme", left + 110, lineY + 2, 12, {
+  textCenteredInRow(doc, "Recibe Conforme", recibeCenter - 85, lineY + 2, 12, {
     width: 170,
     align: "center",
   });

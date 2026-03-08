@@ -10,6 +10,25 @@ const router = express.Router();
 const PDF_OUTPUT_DIR =
   process.env.PDF_OUTPUT_DIR || path.join(process.cwd(), "remisiones-pdf");
 
+router.get("/siguiente-numero", authMiddleware, async (req, res) => {
+  try {
+    const db = await getDb();
+    const rows = await db.all("SELECT numero FROM remisiones");
+    let maxNum = 0;
+    for (const row of rows) {
+      const match = String(row.numero || "").match(/(\d+)/);
+      if (match) {
+        const n = parseInt(match[1], 10);
+        if (n > maxNum) maxNum = n;
+      }
+    }
+    const siguiente = maxNum + 1;
+    return res.json({ ok: true, siguiente });
+  } catch (error) {
+    return res.status(500).json({ ok: false, message: "Error obteniendo siguiente número." });
+  }
+});
+
 router.post("/", authMiddleware, async (req, res) => {
   const canAnular = req.user?.role === "GERENCIAL";
   if (!canAnular && req.body?.anulada) {
@@ -45,7 +64,7 @@ router.post("/", authMiddleware, async (req, res) => {
       fs.mkdirSync(PDF_OUTPUT_DIR, { recursive: true });
     }
     const safeNumero = String(data.numero).replace(/[^\w\-]+/g, "_");
-    const pdfPath = path.join(PDF_OUTPUT_DIR, `remision_${safeNumero}.pdf`);
+    const pdfPath = path.join(PDF_OUTPUT_DIR, `Remision_${safeNumero}.pdf`);
     fs.writeFileSync(pdfPath, pdfBuffer);
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", "inline; filename=remision.pdf");
@@ -90,7 +109,7 @@ router.get("/:numero/pdf", authMiddleware, async (req, res) => {
       fs.mkdirSync(PDF_OUTPUT_DIR, { recursive: true });
     }
     const safeNumero = String(data.numero).replace(/[^\w\-]+/g, "_");
-    const pdfPath = path.join(PDF_OUTPUT_DIR, `remision_${safeNumero}.pdf`);
+    const pdfPath = path.join(PDF_OUTPUT_DIR, `Remision_${safeNumero}.pdf`);
     fs.writeFileSync(pdfPath, pdfBuffer);
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", "inline; filename=remision.pdf");

@@ -64,7 +64,7 @@ async function initDb(db) {
   const adminDefaultPassword =
     process.env.ADMIN_DEFAULT_PASSWORD || (process.env.NODE_ENV === "development" ? "Admin123!" : null);
   if (adminDefaultPassword) {
-    const adminEmails = ["admin@epsihl.com", "admin@epsihl.com.co"];
+    const adminEmails = ["admin", "admin@epsihl.com", "admin@epsihl.com.co"];
     for (const adminEmail of adminEmails) {
       const existing = await db.get("SELECT id FROM users WHERE email = ?", adminEmail);
       if (!existing) {
@@ -74,13 +74,13 @@ async function initDb(db) {
           adminEmail,
           passwordHash,
           "GERENCIAL",
-          "Gerencia",
+          "Administrador",
           new Date().toISOString()
         );
       }
     }
     await db.run(
-      "UPDATE users SET role = 'GERENCIAL' WHERE email IN ('admin@epsihl.com', 'admin@epsihl.com.co')"
+      "UPDATE users SET role = 'GERENCIAL' WHERE email IN ('admin', 'admin@epsihl.com', 'admin@epsihl.com.co')"
     );
   }
 }

@@ -41,15 +41,6 @@ function authMiddleware(req, res, next) {
   }
 }
 
-function requireRole(role) {
-  return (req, res, next) => {
-    if (req.user?.role !== role) {
-      return res.status(403).json({ ok: false, message: "Acceso denegado" });
-    }
-    return next();
-  };
-}
-
 function requireAnyRole(roles) {
   const allowed = Array.isArray(roles) ? roles : [];
   return (req, res, next) => {
@@ -162,6 +153,5 @@ router.post("/reset-password", async (req, res) => {
 module.exports = {
   authRouter: router,
   authMiddleware,
-  requireRole,
   requireAnyRole,
 };
