@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for C:/Users/USER/Desktop/EPSI HL/backend/src/routes/users.js</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../../../../../../../prettify.css" />
+    <link rel="stylesheet" href="../../../../../../../../base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../../../../../../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="../../../../../../../../index.html">all files</a> / <a href="index.html">C:/Users/USER/Desktop/EPSI HL/backend/src/routes/</a> users.js
+    </h1>
+    <div class='clearfix'>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">0% </span>
+        <span class="quiet">Statements</span>
+        <span class='fraction'>0/64</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">0% </span>
+        <span class="quiet">Branches</span>
+        <span class='fraction'>0/40</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">0% </span>
+        <span class="quiet">Functions</span>
+        <span class='fraction'>0/5</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">0% </span>
+        <span class="quiet">Lines</span>
+        <span class='fraction'>0/64</span>
+      </div>
+    </div>
+  </div>
+  <div class='status-line low'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103</td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">const express = <span class="cstat-no" title="statement not covered" >require("express");</span>
+const bcrypt = <span class="cstat-no" title="statement not covered" >require("bcrypt");</span>
+const { getDb } = <span class="cstat-no" title="statement not covered" >require("../db");</span>
+const { authMiddleware, requireAnyRole } = <span class="cstat-no" title="statement not covered" >require("./auth");</span>
+const { validateUserCreate, validateUserUpdate } = <span class="cstat-no" title="statement not covered" >require("../validators/users");</span>
+&nbsp;
+const router = <span class="cstat-no" title="statement not covered" >express.Router();</span>
+&nbsp;
+const USER_MANAGEMENT_ROLES = <span class="cstat-no" title="statement not covered" >["GERENCIAL", "DIRECCION"];</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >router.get("/", authMiddleware, requireAnyRole(USER_MANAGEMENT_ROLES), async (_req, res) =&gt; <span class="fstat-no" title="function not covered" >{</span></span>
+  const db = <span class="cstat-no" title="statement not covered" >await getDb();</span>
+  const users = <span class="cstat-no" title="statement not covered" >await db.all("SELECT id, email, role, name, created_at FROM users ORDER BY id DESC");</span>
+<span class="cstat-no" title="statement not covered" ></span>  return res.json({ ok: true, users });
+});
+&nbsp;
+<span class="cstat-no" title="statement not covered" >router.post("/", authMiddleware, requireAnyRole(USER_MANAGEMENT_ROLES), async (req, res) =&gt; <span class="fstat-no" title="function not covered" >{</span></span>
+  const parse = <span class="cstat-no" title="statement not covered" >validateUserCreate(req.body || {});</span>
+<span class="cstat-no" title="statement not covered" >  if (!parse.ok) {</span>
+<span class="cstat-no" title="statement not covered" ></span>    return res.status(400).json({ ok: false, errors: parse.errors });
+  }
+  const normalizedEmail = <span class="cstat-no" title="statement not covered" >parse.data.email.trim().toLowerCase();</span>
+  const normalizedRole = <span class="cstat-no" title="statement not covered" >parse.data.role.toUpperCase();</span>
+  const db = <span class="cstat-no" title="statement not covered" >await getDb();</span>
+  const existing = <span class="cstat-no" title="statement not covered" >await db.get("SELECT id FROM users WHERE email = ?", normalizedEmail);</span>
+<span class="cstat-no" title="statement not covered" >  if (existing) {</span>
+<span class="cstat-no" title="statement not covered" ></span>    return res.status(409).json({ ok: false, message: "El usuario ya existe" });
+  }
+  const passwordHash = <span class="cstat-no" title="statement not covered" >await bcrypt.hash(parse.data.password, 10);</span>
+<span class="cstat-no" title="statement not covered" >  await db.run(</span>
+    "INSERT INTO users (email, password_hash, role, name, created_at) VALUES (?, ?, ?, ?, ?)",
+    normalizedEmail,
+    passwordHash,
+    normalizedRole,
+    String(parse.data.name || "").trim(),
+    new Date().toISOString()
+  );
+<span class="cstat-no" title="statement not covered" ></span>  return res.json({ ok: true });
+});
+&nbsp;
+<span class="cstat-no" title="statement not covered" >router.put("/:id", authMiddleware, requireAnyRole(USER_MANAGEMENT_ROLES), async (req, res) =&gt; <span class="fstat-no" title="function not covered" >{</span></span>
+  const { id } = <span class="cstat-no" title="statement not covered" >req.params;</span>
+  const parse = <span class="cstat-no" title="statement not covered" >validateUserUpdate(req.body || {});</span>
+<span class="cstat-no" title="statement not covered" >  if (!parse.ok) {</span>
+<span class="cstat-no" title="statement not covered" ></span>    return res.status(400).json({ ok: false, errors: parse.errors });
+  }
+  const { email, role, name, password } = <span class="cstat-no" title="statement not covered" >parse.data;</span>
+<span class="cstat-no" title="statement not covered" >  if (!email &amp;&amp; !role &amp;&amp; !name &amp;&amp; !password) {</span>
+<span class="cstat-no" title="statement not covered" ></span>    return res.status(400).json({ ok: false, message: "Sin cambios para actualizar" });
+  }
+  const db = <span class="cstat-no" title="statement not covered" >await getDb();</span>
+  const user = <span class="cstat-no" title="statement not covered" >await db.get("SELECT id FROM users WHERE id = ?", id);</span>
+<span class="cstat-no" title="statement not covered" >  if (!user) {</span>
+<span class="cstat-no" title="statement not covered" ></span>    return res.status(404).json({ ok: false, message: "Usuario no encontrado" });
+  }
+<span class="cstat-no" title="statement not covered" >  if (email) {</span>
+    const normalizedEmail = <span class="cstat-no" title="statement not covered" >String(email).trim().toLowerCase();</span>
+    const existing = <span class="cstat-no" title="statement not covered" >await db.get("SELECT id FROM users WHERE email = ?", normalizedEmail);</span>
+<span class="cstat-no" title="statement not covered" >    if (existing &amp;&amp; String(existing.id) !== String(id)) {</span>
+<span class="cstat-no" title="statement not covered" ></span>      return res.status(409).json({ ok: false, message: "El email ya está en uso" });
+    }
+  }
+  let passwordHash;
+<span class="cstat-no" title="statement not covered" >  if (password) {</span>
+<span class="cstat-no" title="statement not covered" ></span>    passwordHash = await bcrypt.hash(password, 10);
+  }
+<span class="cstat-no" title="statement not covered" >  await db.run(</span>
+    "UPDATE users SET email = COALESCE(?, email), role = COALESCE(?, role), name = COALESCE(?, name), password_hash = COALESCE(?, password_hash) WHERE id = ?",
+    email ? String(email).trim().toLowerCase() : null,
+    role ? String(role).toUpperCase() : null,
+    name || null,
+    passwordHash || null,
+    id
+  );
+<span class="cstat-no" title="statement not covered" ></span>  return res.json({ ok: true });
+});
+&nbsp;
+<span class="cstat-no" title="statement not covered" >router.delete("/:id", authMiddleware, requireAnyRole(USER_MANAGEMENT_ROLES), async (req, res) =&gt; <span class="fstat-no" title="function not covered" >{</span></span>
+  const { id } = <span class="cstat-no" title="statement not covered" >req.params;</span>
+  const db = <span class="cstat-no" title="statement not covered" >await getDb();</span>
+  const user = <span class="cstat-no" title="statement not covered" >await db.get("SELECT id FROM users WHERE id = ?", id);</span>
+<span class="cstat-no" title="statement not covered" >  if (!user) {</span>
+<span class="cstat-no" title="statement not covered" ></span>    return res.status(404).json({ ok: false, message: "Usuario no encontrado" });
+  }
+<span class="cstat-no" title="statement not covered" ></span>  await db.run("DELETE FROM users WHERE id = ?", id);
+<span class="cstat-no" title="statement not covered" ></span>  return res.json({ ok: true });
+});
+&nbsp;
+<span class="cstat-no" title="statement not covered" >router.post("/:id/reset", authMiddleware, requireAnyRole(USER_MANAGEMENT_ROLES), async (req, res) =&gt; <span class="fstat-no" title="function not covered" >{</span></span>
+  const { id } = <span class="cstat-no" title="statement not covered" >req.params;</span>
+  const db = <span class="cstat-no" title="statement not covered" >await getDb();</span>
+  const user = <span class="cstat-no" title="statement not covered" >await db.get("SELECT id, email FROM users WHERE id = ?", id);</span>
+<span class="cstat-no" title="statement not covered" >  if (!user) {</span>
+<span class="cstat-no" title="statement not covered" ></span>    return res.status(404).json({ ok: false, message: "Usuario no encontrado" });
+  }
+  const tempPassword = <span class="cstat-no" title="statement not covered" >Math.random().toString(36).slice(-8);</span>
+  const passwordHash = <span class="cstat-no" title="statement not covered" >await bcrypt.hash(tempPassword, 10);</span>
+<span class="cstat-no" title="statement not covered" ></span>  await db.run("UPDATE users SET password_hash = ? WHERE id = ?", passwordHash, id);
+<span class="cstat-no" title="statement not covered" ></span>  return res.json({ ok: true, tempPassword });
+});
+&nbsp;
+<span class="cstat-no" title="statement not covered" >m</span>odule.exports = router;
+&nbsp;</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Mon Mar 09 2026 22:00:51 GMT-0500 (hora estándar de Colombia)
+</div>
+</div>
+<script src="../../../../../../../../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../../../../../../../../sorter.js"></script>
+</body>
+</html>

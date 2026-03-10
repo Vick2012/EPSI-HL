@@ -2,7 +2,7 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const { getDb } = require("../db");
-const crypto = require("crypto");
+const crypto = require("node:crypto");
 const nodemailer = require("nodemailer");
 
 const router = express.Router();
@@ -36,7 +36,10 @@ function authMiddleware(req, res, next) {
     const payload = jwt.verify(token, getJwtSecret());
     req.user = payload;
     return next();
-  } catch (error) {
+  } catch (err) { // NOSONAR - Excepción manejada: retorna 401 y log en dev
+    if (process.env.NODE_ENV === "development") {
+      console.error("JWT verify:", err);
+    }
     return res.status(401).json({ ok: false, message: "Token inválido" });
   }
 }

@@ -2,6 +2,18 @@ import "./style.css";
 import { ASSETS_BASE, getWhatsAppHelpUrl, hasWhatsAppHelp } from "./api/base";
 import { loginRequest, fetchMe, requestReset, applyReset } from "./api/auth";
 import { exportClientes, fetchCliente, saveCliente, type ClientePayload } from "./api/clientes";
+
+const formatValidationErrors = (errors: { formErrors?: string[]; fieldErrors?: Record<string, string[]> }): string => {
+  if (!errors) return "";
+  const parts: string[] = [];
+  if (errors.formErrors?.length) parts.push(...errors.formErrors);
+  if (errors.fieldErrors) {
+    for (const msgs of Object.values(errors.fieldErrors)) {
+      if (Array.isArray(msgs)) parts.push(...msgs);
+    }
+  }
+  return parts.filter(Boolean).join(". ");
+};
 import {
   generarRemisionPdf,
   fetchRemision,
@@ -535,7 +547,7 @@ logoImg.addEventListener("error", () => {
 const setActiveNav = (navId: "inicio" | "remisiones" | "turno" | "reportes" | "bi" | "usuarios") => {
   app.querySelectorAll(".nav-item").forEach((btn) => {
     btn.classList.remove("active");
-    if (btn.getAttribute("data-nav") === navId) {
+    if ((btn as HTMLElement).dataset.nav === navId) {
       btn.classList.add("active");
     }
   });
@@ -706,8 +718,7 @@ const cargarConsecutivo = async () => {
     try {
       const siguiente = await fetchSiguienteNumero(token);
       setConsecutivo(siguiente);
-    } catch (_) {
-      /* usar localStorage como fallback */
+    } catch (_err) { // NOSONAR - Fallback a localStorage cuando API falla
     }
   }
   remisionNumeroInput.value = formatConsecutivo(getConsecutivo());
@@ -751,9 +762,11 @@ const fetchClienteDb = async (nit: string) => {
   return data.cliente as Cliente;
 };
 
-const saveClienteDb = async (cliente: Cliente) => {
+const saveClienteDb = async (
+  cliente: Cliente,
+): Promise<{ ok: true } | { ok: false; message?: string; errors?: { formErrors: string[]; fieldErrors: Record<string, string[]> } }> => {
   const token = getToken();
-  if (!token) return false;
+  if (!token) return { ok: false, message: "Debes iniciar sesión." };
   const payload: ClientePayload = {
     tipo_documento: cliente.tipoDocumento || null,
     numero_documento: cliente.nit,
@@ -764,8 +777,7 @@ const saveClienteDb = async (cliente: Cliente) => {
     telefono: cliente.telefono || null,
     email: cliente.email || null,
   };
-  const response = await saveCliente(payload, token);
-  return response.ok;
+  return saveCliente(payload, token);
 };
 
 const llenarCliente = (cliente: Record<string, string>) => {
@@ -827,6 +839,7 @@ guardarClienteBtn.addEventListener("click", async () => {
     const camposRequeridos = [nombre, direccion, ciudad, telefono, email];
     const faltanCampos = camposRequeridos.some((v) => !v);
     if (faltanCampos) {
+      clienteValidationWarning.textContent = "Para Guardar Cliente Nuevo debe llenar todos los campos";
       clienteValidationWarning.classList.remove("hidden");
       clienteStatusEl.textContent = "";
       return;
@@ -844,10 +857,20 @@ guardarClienteBtn.addEventListener("click", async () => {
     telefono,
     email,
   };
-  const ok = await saveClienteDb(cliente);
-  clienteStatusEl.textContent = ok
-    ? "Cliente guardado correctamente."
-    : "No se pudo guardar el cliente.";
+  const result = await saveClienteDb(cliente);
+  if (result.ok) {
+    clienteStatusEl.textContent = "Cliente guardado correctamente.";
+    clienteValidationWarning.classList.add("hidden");
+  } else if (result.message === "Debes iniciar sesión.") {
+    clienteStatusEl.textContent = result.message;
+    clienteValidationWarning.classList.add("hidden");
+    openLogin(goRemisiones);
+  } else {
+    const msg = result.errors ? formatValidationErrors(result.errors) : result.message ?? "No se pudo guardar el cliente.";
+    clienteValidationWarning.textContent = msg;
+    clienteValidationWarning.classList.remove("hidden");
+    clienteStatusEl.textContent = "";
+  }
 });
 
 exportarClientesBtn.addEventListener("click", async () => {
@@ -957,7 +980,7 @@ const goRemisiones = async () => {
 const goUsers = () => {
   const role = getRole();
   if (!canAccessUsersModule(role)) {
-    window.alert("No tienes permisos. Inicia sesión con un usuario autorizado.");
+    globalThis.alert("No tienes permisos. Inicia sesión con un usuario autorizado.");
     clearSession();
     currentUserEl.textContent = "";
     currentUserEl.classList.add("hidden");
@@ -1230,7 +1253,7 @@ guardarRemisionBtn.addEventListener("click", async () => {
     if (pdfResponse.ok) {
       const pdf = await pdfResponse.blob();
       const url = URL.createObjectURL(pdf);
-      window.open(url, "_blank");
+      globalThis.open(url, "_blank");
     }
     statusEl.textContent = "Remisión actualizada.";
   } catch {
@@ -1251,7 +1274,7 @@ app.querySelector("#generar")!.addEventListener("click", async () => {
   try {
     const pdf = await generarRemisionPdf(payload);
     const url = URL.createObjectURL(pdf);
-    window.open(url, "_blank");
+    globalThis.open(url, "_blank");
     statusEl.textContent = "PDF generado.";
     await cargarConsecutivo();
   } catch (error) {
@@ -1329,7 +1352,7 @@ const loadUsers = async () => {
       btn.addEventListener("click", async () => {
         const id = (btn as HTMLButtonElement).dataset.deleteUser;
         if (!id) return;
-        const confirmDelete = window.confirm("¿Eliminar usuario?");
+        const confirmDelete = globalThis.confirm("¿Eliminar usuario?");
         if (!confirmDelete) return;
         const responseDelete = await deleteUser(id, token);
         if (!responseDelete.ok) {

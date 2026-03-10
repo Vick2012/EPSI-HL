@@ -52,8 +52,12 @@ EPSI HL/
 │   │   ├── services/
 │   │   │   └── pdfRemision.js # Generación PDF con plantilla EPSI HL
 │   │   └── validators/
+│   │       ├── cliente.js     # Esquema Zod para clientes
 │   │       ├── remision.js    # Esquemas Zod para remisiones
 │   │       └── users.js       # Esquemas Zod para usuarios
+│   ├── test/                  # Tests Vitest
+│   │   └── validators/
+│   └── scripts/
 │   ├── assets/                # Logos e imágenes para PDF
 │   ├── data/                  # iris.db (SQLite)
 │   ├── .env                   # Variables de entorno (no versionado)
@@ -153,6 +157,40 @@ npm run dev
 
 - **Usuario:** `admin` o `admin@epsihl.com`
 - **Contraseña:** `Admin123!` (o `ADMIN_DEFAULT_PASSWORD` en `.env`)
+
+---
+
+## Tests
+
+Se usa **Vitest** en backend y frontend.
+
+### Ejecutar tests
+
+```bash
+# Todos los tests (desde la raíz)
+npm run test
+
+# Solo backend
+cd backend && npm run test
+
+# Solo frontend
+cd frontend/vite-project && npm run test
+```
+
+### Coverage (para SonarQube)
+
+```bash
+# Backend: genera backend/coverage/lcov.info
+cd backend && npm run test:coverage
+
+# Frontend: genera frontend/vite-project/coverage/lcov.info
+cd frontend/vite-project && npm run test:coverage
+
+# Ambos desde la raíz
+npm run test:coverage
+```
+
+Antes de ejecutar `sonar-scanner`, ejecutar `npm run test:coverage` para generar los reportes de cobertura.
 
 ---
 

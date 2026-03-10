@@ -1,4 +1,4 @@
-const { z } = require("zod");
+const { z, flattenError } = require("zod");
 
 const itemSchema = z.object({
   descripcion: z.string().min(1),
@@ -33,7 +33,7 @@ const remisionSchema = z.object({
 function validateRemision(payload) {
   const result = remisionSchema.safeParse(payload);
   if (!result.success) {
-    return { ok: false, errors: result.error.flatten() };
+    return { ok: false, errors: flattenError(result.error) };
   }
   return { ok: true, data: result.data };
 }

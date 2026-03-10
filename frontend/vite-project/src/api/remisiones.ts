@@ -30,7 +30,7 @@ export type RemisionPayload = {
 };
 
 export async function generarRemisionPdf(payload: RemisionPayload) {
-  const token = window.localStorage.getItem("epsiToken");
+  const token = globalThis.localStorage.getItem("epsiToken");
   const response = await fetch(`${API_BASE}/remisiones`, {
     method: "POST",
     headers: {
@@ -50,7 +50,8 @@ export async function generarRemisionPdf(payload: RemisionPayload) {
       try {
         const json = JSON.parse(text);
         if (json?.message) msg = json.message;
-      } catch (_) {}
+      } catch (_err) { // NOSONAR - Fallback a msg por defecto si parse falla
+      }
       throw new Error(msg);
     }
     const text = await response.text();

@@ -67,7 +67,7 @@ body {
 .sidebar .subtitle {
   font-size: 13px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.82);
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .nav {
@@ -81,7 +81,7 @@ body {
   align-items: center;
   gap: 12px;
   text-align: left;
-  background: rgba(255, 255, 255, 0.08);
+  background: #172d5c;
   border: none;
   border-left: 3px solid transparent;
   color: #ffffff;
@@ -99,15 +99,15 @@ body {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  opacity: 0.9;
+  opacity: 1;
 }
 
 .nav-item:hover:not(.active):not(:disabled) {
-  background: rgba(255, 255, 255, 0.15);
+  background: #1e3a6e;
 }
 
 .nav-item.active {
-  background: rgba(255, 255, 255, 0.22);
+  background: #2a4a94;
   border-left-color: #ffffff;
   color: #ffffff;
   font-weight: 700;
@@ -242,7 +242,7 @@ body {
 
 .user-pill {
   background: #fde8d5;
-  color: #c56f1f;
+  color: #5c3a0f;
   padding: 8px 14px;
   border-radius: 999px;
   font-size: 13px;
@@ -652,10 +652,6 @@ body {
   transition: opacity 0.2s;
 }
 
-.login-form-panel .password-field input {
-  padding-right: 44px;
-}
-
 .login-btn-primary {
   width: 100%;
   padding: 14px 20px;
@@ -664,7 +660,7 @@ body {
   border: none;
   border-radius: 10px;
   background: linear-gradient(135deg, #f19a3e 0%, #e0892f 100%);
-  color: #ffffff;
+  color: #0f0f0f;
   cursor: pointer;
   box-shadow: 0 4px 14px rgba(241, 154, 62, 0.4);
   transition: transform 0.2s, box-shadow 0.2s;
@@ -800,8 +796,8 @@ body {
 
 #login-error {
   font-size: 13px;
-  color: #b3202d;
-  background: rgba(179, 32, 45, 0.08);
+  color: #6b1319;
+  background: rgba(179, 32, 45, 0.15);
   padding: 8px 12px;
   border-radius: 8px;
   border-left: 3px solid #b3202d;
@@ -911,7 +907,7 @@ body {
 
 .env-pill {
   background: #fde8d5;
-  color: #c56f1f;
+  color: #5c3a0f;
   padding: 6px 12px;
   border-radius: 999px;
   font-size: 12px;
@@ -976,12 +972,12 @@ body {
 }
 
 .wizard-step.completed {
-  color: #16a34a;
+  color: #166534;
 }
 
 .wizard-step.completed .wizard-step-num {
   background: #dcfce7;
-  color: #16a34a;
+  color: #166534;
 }
 
 .wizard-step-num {
@@ -992,13 +988,13 @@ body {
   height: 28px;
   border-radius: 50%;
   background: #e2e8f0;
-  color: #64748b;
+  color: #1e293b;
   font-weight: 600;
   font-size: 13px;
 }
 
 .wizard-step.active .wizard-step-num {
-  background: rgba(255, 255, 255, 0.3);
+  background: #1f3f83;
   color: #ffffff;
 }
 
@@ -1132,7 +1128,7 @@ body {
   border-radius: 8px;
   border: 1px solid #f19a3e;
   background: #ffffff;
-  color: #c56f1f;
+  color: #5c3a0f;
   font-weight: 600;
   cursor: pointer;
   width: fit-content;
@@ -1140,7 +1136,7 @@ body {
 
 .user-cta {
   background: #f19a3e;
-  color: #ffffff;
+  color: #0f0f0f;
   border-color: #f19a3e;
   box-shadow: 0 8px 16px rgba(241, 154, 62, 0.3);
 }
@@ -1487,9 +1483,9 @@ select {
 }
 
 .hero-actions .secondary {
-  border-color: rgba(255, 255, 255, 0.8);
-  color: rgba(255, 255, 255, 0.95);
-  background: rgba(255, 255, 255, 0.12);
+  border-color: #ffffff;
+  color: #ffffff;
+  background: #1f3f83;
 }
 
 .hero-actions .secondary:hover:not(:disabled) {
@@ -1619,8 +1615,8 @@ select {
   width: 72px;
   height: 72px;
   border-radius: 16px;
-  background: linear-gradient(135deg, rgba(31, 63, 131, 0.08) 0%, rgba(241, 154, 62, 0.12) 100%);
-  color: #1f3f83;
+  background: linear-gradient(135deg, rgba(31, 63, 131, 0.2) 0%, rgba(241, 154, 62, 0.22) 100%);
+  color: #0a1942;
   display: grid;
   place-items: center;
   font-size: 22px;
@@ -1649,7 +1645,7 @@ select {
 .module-card .secondary:disabled {
   background: #f1f5f9;
   border-color: #e2e8f0;
-  color: #94a3b8;
+  color: #334155;
   cursor: default;
   font-weight: 600;
 }
@@ -1685,7 +1681,7 @@ select {
   align-items: center;
   gap: 10px;
   padding: 12px 18px;
-  background: #25d366;
+  background: #128c47;
   color: #ffffff;
   border-radius: 50px;
   text-decoration: none;
@@ -1698,7 +1694,7 @@ select {
 .help-whatsapp:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 24px rgba(37, 211, 102, 0.55);
-  background: #20bd5a;
+  background: #0d7038;
   color: #ffffff;
 }
 

@@ -1,8 +1,8 @@
-const path = require("path");
+const path = require("node:path");
 const sqlite3 = require("sqlite3");
 const { open } = require("sqlite");
 const bcrypt = require("bcrypt");
-const fs = require("fs");
+const fs = require("node:fs");
 
 const DATA_DIR = path.join(__dirname, "..", "data");
 const DB_PATH = path.join(DATA_DIR, "iris.db");

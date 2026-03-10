@@ -1,6 +1,6 @@
 const PDFDocument = require("pdfkit");
-const path = require("path");
-const fs = require("fs");
+const path = require("node:path");
+const fs = require("node:fs");
 const sharp = require("sharp");
 
 const ASSETS_DIR = path.join(__dirname, "..", "..", "assets");
@@ -69,8 +69,10 @@ function drawLogoWatermark(doc, logoPath) {
       width,
       height,
     });
-  } catch (error) {
-    // If logo fails, skip watermark silently.
+  } catch (err) { // NOSONAR - Watermark opcional, fallback silencioso
+    if (process.env.NODE_ENV === "development") {
+      console.warn("Watermark logo skipped:", err);
+    }
   }
   doc.restore();
   doc.opacity(1);
@@ -101,7 +103,10 @@ function drawHeader(doc, remision, logoPath) {
     try {
       doc.image(logoPath, left, blockTop, { width: logoWidth });
       logoDrawn = true;
-    } catch (error) {
+    } catch (err) { // NOSONAR - Logo opcional, fallback a texto
+      if (process.env.NODE_ENV === "development") {
+        console.warn("Header logo skipped:", err);
+      }
       logoDrawn = false;
     }
   }
@@ -451,7 +456,10 @@ async function getLogoImage(paths, width) {
       .png()
       .toBuffer();
     return buffer;
-  } catch (error) {
+  } catch (err) { // NOSONAR - Fallback: retorna path original si resize falla
+    if (process.env.NODE_ENV === "development") {
+      console.warn("Image resize failed, using original:", err);
+    }
     return sourcePath;
   }
 }

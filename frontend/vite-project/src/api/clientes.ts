@@ -18,13 +18,27 @@ export const fetchCliente = async (nit: string, token: string) => {
   return response;
 };
 
-export const saveCliente = async (payload: ClientePayload, token: string) => {
+export type SaveClienteResult =
+  | { ok: true }
+  | { ok: false; message?: string; errors?: { formErrors: string[]; fieldErrors: Record<string, string[]> } };
+
+export const saveCliente = async (payload: ClientePayload, token: string): Promise<SaveClienteResult> => {
   const response = await fetch(`${API_BASE}/clientes`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify(payload),
   });
-  return response;
+  if (response.ok) return { ok: true };
+  try {
+    const data = await response.json();
+    return {
+      ok: false,
+      message: data.message,
+      errors: data.errors,
+    };
+  } catch {
+    return { ok: false, message: "No se pudo guardar el cliente." };
+  }
 };
 
 export const exportClientes = async (token: string) => {

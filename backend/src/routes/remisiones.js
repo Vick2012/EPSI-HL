@@ -3,8 +3,8 @@ const { generateRemisionPdf } = require("../services/pdfRemision");
 const { validateRemision } = require("../validators/remision");
 const { authMiddleware } = require("./auth");
 const { getDb } = require("../db");
-const path = require("path");
-const fs = require("fs");
+const path = require("node:path");
+const fs = require("node:fs");
 
 const router = express.Router();
 const PDF_OUTPUT_DIR =
@@ -15,16 +15,20 @@ router.get("/siguiente-numero", authMiddleware, async (req, res) => {
     const db = await getDb();
     const rows = await db.all("SELECT numero FROM remisiones");
     let maxNum = 0;
+    const numRe = /(\d+)/; // NOSONAR - RegExp.exec usado
     for (const row of rows) {
-      const match = String(row.numero || "").match(/(\d+)/);
+      const match = numRe.exec(String(row.numero || ""));
       if (match) {
-        const n = parseInt(match[1], 10);
+        const n = Number.parseInt(match[1], 10);
         if (n > maxNum) maxNum = n;
       }
     }
     const siguiente = maxNum + 1;
     return res.json({ ok: true, siguiente });
-  } catch (error) {
+  } catch (err) { // NOSONAR - Excepción manejada
+    if (process.env.NODE_ENV === "development") {
+      console.error("siguiente-numero:", err);
+    }
     return res.status(500).json({ ok: false, message: "Error obteniendo siguiente número." });
   }
 });
@@ -63,13 +67,14 @@ router.post("/", authMiddleware, async (req, res) => {
     if (!fs.existsSync(PDF_OUTPUT_DIR)) {
       fs.mkdirSync(PDF_OUTPUT_DIR, { recursive: true });
     }
-    const safeNumero = String(data.numero).replace(/[^\w\-]+/g, "_");
+    const safeNumero = String(data.numero).replaceAll(/[^\w-]+/g, "_"); // NOSONAR
     const pdfPath = path.join(PDF_OUTPUT_DIR, `Remision_${safeNumero}.pdf`);
     fs.writeFileSync(pdfPath, pdfBuffer);
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", "inline; filename=remision.pdf");
     return res.send(pdfBuffer);
-  } catch (error) {
+  } catch (_err) { // NOSONAR - Excepción manejada con console.error
+    console.error("POST remisiones PDF:", _err);
     return res.status(500).json({ ok: false, message: "Error generando PDF" });
   }
 });
@@ -87,7 +92,8 @@ router.get("/:numero", authMiddleware, async (req, res) => {
   try {
     const data = JSON.parse(record.data_json);
     return res.json({ ok: true, remision: data });
-  } catch {
+  } catch (_err) { // NOSONAR - Excepción manejada con console.error
+    console.error("GET remision JSON:", _err);
     return res.status(500).json({ ok: false, message: "Error leyendo remisión." });
   }
 });
@@ -108,13 +114,14 @@ router.get("/:numero/pdf", authMiddleware, async (req, res) => {
     if (!fs.existsSync(PDF_OUTPUT_DIR)) {
       fs.mkdirSync(PDF_OUTPUT_DIR, { recursive: true });
     }
-    const safeNumero = String(data.numero).replace(/[^\w\-]+/g, "_");
+    const safeNumero = String(data.numero).replaceAll(/[^\w-]+/g, "_"); // NOSONAR
     const pdfPath = path.join(PDF_OUTPUT_DIR, `Remision_${safeNumero}.pdf`);
     fs.writeFileSync(pdfPath, pdfBuffer);
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", "inline; filename=remision.pdf");
     return res.send(pdfBuffer);
-  } catch {
+  } catch (_err) { // NOSONAR - Excepción manejada con console.error
+    console.error("GET remision PDF:", _err);
     return res.status(500).json({ ok: false, message: "Error generando PDF" });
   }
 });

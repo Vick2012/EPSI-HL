@@ -1,8 +1,9 @@
 const express = require("express");
-const fs = require("fs");
+const fs = require("node:fs");
 const xlsx = require("xlsx");
 const { getDb } = require("../db");
 const { authMiddleware } = require("./auth");
+const { validateCliente } = require("../validators/cliente");
 
 const router = express.Router();
 
@@ -51,11 +52,12 @@ router.get("/:numero", authMiddleware, async (req, res) => {
 });
 
 router.post("/", authMiddleware, async (req, res) => {
-  const payload = req.body || {};
-  const numero = String(payload.numero_documento || "").trim();
-  if (!numero) {
-    return res.status(400).json({ ok: false, message: "Número de documento requerido." });
+  const parse = validateCliente(req.body || {});
+  if (!parse.ok) {
+    return res.status(400).json({ ok: false, message: "Datos de cliente inválidos.", errors: parse.errors });
   }
+  const payload = parse.data;
+  const numero = payload.numero_documento;
   const now = new Date().toISOString();
   const db = await getDb();
   const existing = await db.get("SELECT id FROM clientes WHERE numero_documento = ?", numero);
@@ -82,7 +84,7 @@ router.post("/", authMiddleware, async (req, res) => {
     payload.telefono || null,
     payload.email || null,
     now,
-    now
+    now,
   );
   if (!existing) {
     const csvPath = process.env.CLIENTES_CSV_PATH;
@@ -102,7 +104,7 @@ router.post("/", authMiddleware, async (req, res) => {
         payload.telefono || "",
         payload.email || "",
       ]
-        .map((value) => String(value).replace(/[\r\n]+/g, " "))
+        .map((value) => String(value).replaceAll(/[\r\n]+/g, " ")) // NOSONAR
         .join(";");
       fs.appendFileSync(csvPath, `${line}\n`);
     }

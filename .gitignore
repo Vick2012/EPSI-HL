@@ -14,6 +14,7 @@ iris.db
 dist
 dist-ssr
 build
+coverage
 
 # Generated PDFs (opcional: quitar si quieres versionarlas)
 remisiones-pdf

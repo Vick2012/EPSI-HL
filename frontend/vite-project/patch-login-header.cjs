@@ -1,5 +1,5 @@
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const cssPath = path.join(__dirname, 'src', 'style.css');
 let css = fs.readFileSync(cssPath, 'utf8');
