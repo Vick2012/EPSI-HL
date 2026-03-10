@@ -1,10 +1,13 @@
-# Dependencies
+# Dependencies - NUNCA subir node_modules (muy pesado, se instala con npm install)
 node_modules
+**/node_modules/
 
-# Environment and secrets
+# Environment and secrets - NUNCA subir .env (contiene claves secretas)
 .env
 .env.local
 .env.*.local
+**/.env
+!**/.env.example
 
 # Database
 *.db
