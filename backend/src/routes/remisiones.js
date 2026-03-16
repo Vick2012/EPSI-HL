@@ -13,18 +13,27 @@ const PDF_OUTPUT_DIR =
 router.get("/siguiente-numero", authMiddleware, async (req, res) => {
   try {
     const db = await getDb();
-    const rows = await db.all("SELECT numero FROM remisiones");
-    let maxNum = 0;
-    const numRe = /(\d+)/; // NOSONAR - RegExp.exec usado
-    for (const row of rows) {
-      const match = numRe.exec(String(row.numero || ""));
-      if (match) {
-        const n = Number.parseInt(match[1], 10);
-        if (n > maxNum) maxNum = n;
+    if (db.dialect === "sqlite") {
+      const rows = await db.all("SELECT numero FROM remisiones");
+      let maxNum = 0;
+      const numRe = /(\d+)/; // NOSONAR - RegExp.exec usado
+      for (const row of rows) {
+        const match = numRe.exec(String(row.numero || ""));
+        if (match) {
+          const n = Number.parseInt(match[1], 10);
+          if (n > maxNum) maxNum = n;
+        }
       }
+      return res.json({ ok: true, siguiente: maxNum + 1 });
     }
-    const siguiente = maxNum + 1;
-    return res.json({ ok: true, siguiente });
+    const row = await db.get(`
+      SELECT COALESCE(
+        MAX(NULLIF(regexp_replace(numero, '\\D', '', 'g'), '')::integer),
+        0
+      ) + 1 AS siguiente
+      FROM remisiones
+    `);
+    return res.json({ ok: true, siguiente: row?.siguiente || 1 });
   } catch (err) { // NOSONAR - Excepción manejada
     if (process.env.NODE_ENV === "development") {
       console.error("siguiente-numero:", err);
@@ -49,17 +58,17 @@ router.post("/", authMiddleware, async (req, res) => {
       usuario: req.user?.email || "usuario",
     };
     const db = await getDb();
-    const existing = await db.get("SELECT id FROM remisiones WHERE numero = ?", data.numero);
+    const existing = await db.get("SELECT id FROM remisiones WHERE numero = $1", data.numero);
     if (existing) {
       return res.status(409).json({ ok: false, message: "La remisión ya existe." });
     }
     const now = new Date().toISOString();
     await db.run(
-      "INSERT INTO remisiones (numero, data_json, usuario, anulada, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+      "INSERT INTO remisiones (numero, data_json, usuario, anulada, created_at, updated_at) VALUES ($1, $2::jsonb, $3, $4, $5, $6)",
       data.numero,
       JSON.stringify(data),
       data.usuario,
-      data.anulada ? 1 : 0,
+      Boolean(data.anulada),
       now,
       now
     );
@@ -85,12 +94,12 @@ router.get("/:numero", authMiddleware, async (req, res) => {
   }
   const { numero } = req.params;
   const db = await getDb();
-  const record = await db.get("SELECT data_json FROM remisiones WHERE numero = ?", numero);
+  const record = await db.get("SELECT data_json FROM remisiones WHERE numero = $1", numero);
   if (!record) {
     return res.status(404).json({ ok: false, message: "Remisión no encontrada." });
   }
   try {
-    const data = JSON.parse(record.data_json);
+    const data = typeof record.data_json === "string" ? JSON.parse(record.data_json) : record.data_json;
     return res.json({ ok: true, remision: data });
   } catch (_err) { // NOSONAR - Excepción manejada con console.error
     console.error("GET remision JSON:", _err);
@@ -104,12 +113,12 @@ router.get("/:numero/pdf", authMiddleware, async (req, res) => {
   }
   const { numero } = req.params;
   const db = await getDb();
-  const record = await db.get("SELECT data_json FROM remisiones WHERE numero = ?", numero);
+  const record = await db.get("SELECT data_json FROM remisiones WHERE numero = $1", numero);
   if (!record) {
     return res.status(404).json({ ok: false, message: "Remisión no encontrada." });
   }
   try {
-    const data = JSON.parse(record.data_json);
+    const data = typeof record.data_json === "string" ? JSON.parse(record.data_json) : record.data_json;
     const pdfBuffer = await generateRemisionPdf(data);
     if (!fs.existsSync(PDF_OUTPUT_DIR)) {
       fs.mkdirSync(PDF_OUTPUT_DIR, { recursive: true });
@@ -136,7 +145,7 @@ router.put("/:numero", authMiddleware, async (req, res) => {
     return res.status(400).json({ ok: false, errors: parse.errors });
   }
   const db = await getDb();
-  const existing = await db.get("SELECT id FROM remisiones WHERE numero = ?", numero);
+  const existing = await db.get("SELECT id FROM remisiones WHERE numero = $1", numero);
   if (!existing) {
     return res.status(404).json({ ok: false, message: "Remisión no encontrada." });
   }
@@ -147,10 +156,10 @@ router.put("/:numero", authMiddleware, async (req, res) => {
   };
   const now = new Date().toISOString();
   await db.run(
-    "UPDATE remisiones SET data_json = ?, usuario = ?, anulada = ?, updated_at = ? WHERE numero = ?",
+    "UPDATE remisiones SET data_json = $1::jsonb, usuario = $2, anulada = $3, updated_at = $4 WHERE numero = $5",
     JSON.stringify(data),
     data.usuario,
-    data.anulada ? 1 : 0,
+    Boolean(data.anulada),
     now,
     numero
   );

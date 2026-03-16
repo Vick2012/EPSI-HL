@@ -36,7 +36,7 @@ async function authMiddleware(req, res, next) {
   try {
     const payload = jwt.verify(token, getJwtSecret());
     const db = await getDb();
-    const currentUser = await db.get("SELECT id, email, role, status FROM users WHERE id = ?", payload.sub);
+    const currentUser = await db.get("SELECT id, email, role, status FROM users WHERE id = $1", payload.sub);
     if (!currentUser || currentUser.status !== "ACTIVO") {
       return res.status(401).json({ ok: false, message: "Usuario inactivo o no disponible" });
     }
@@ -70,7 +70,7 @@ router.post("/login", async (req, res) => {
     return res.status(400).json({ ok: false, message: "Solo se permiten correos con dominio @epsihl.*" });
   }
   const db = await getDb();
-  const user = await db.get("SELECT * FROM users WHERE email = ?", normalizedEmail);
+  const user = await db.get("SELECT * FROM users WHERE email = $1", normalizedEmail);
   if (!user) {
     return res.status(401).json({ ok: false, message: "Credenciales inválidas" });
   }
@@ -102,7 +102,7 @@ router.post("/request-reset", async (req, res) => {
     return res.status(400).json({ ok: false, message: "Solo se permiten correos con dominio @epsihl.*" });
   }
   const db = await getDb();
-  const user = await db.get("SELECT id, email FROM users WHERE email = ?", normalizedEmail);
+  const user = await db.get("SELECT id, email FROM users WHERE email = $1", normalizedEmail);
   if (!user) {
     return res.json({ ok: true, message: "Si el correo existe, recibirás un enlace." });
   }
@@ -110,10 +110,11 @@ router.post("/request-reset", async (req, res) => {
   const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
   const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
   await db.run(
-    "INSERT INTO password_resets (user_id, token_hash, expires_at, used, created_at) VALUES (?, ?, ?, 0, ?)",
+    "INSERT INTO password_resets (user_id, token_hash, expires_at, used, created_at) VALUES ($1, $2, $3, $4, $5)",
     user.id,
     tokenHash,
     expiresAt,
+    false,
     new Date().toISOString()
   );
 
@@ -153,7 +154,7 @@ router.post("/reset-password", async (req, res) => {
   const db = await getDb();
   const tokenHash = crypto.createHash("sha256").update(String(token)).digest("hex");
   const record = await db.get(
-    "SELECT * FROM password_resets WHERE token_hash = ? AND used = 0",
+    "SELECT * FROM password_resets WHERE token_hash = $1 AND used = FALSE",
     tokenHash
   );
   if (!record) {
@@ -163,8 +164,10 @@ router.post("/reset-password", async (req, res) => {
     return res.status(400).json({ ok: false, message: "Token expirado" });
   }
   const passwordHash = await bcrypt.hash(password, 10);
-  await db.run("UPDATE users SET password_hash = ? WHERE id = ?", passwordHash, record.user_id);
-  await db.run("UPDATE password_resets SET used = 1 WHERE id = ?", record.id);
+  await db.withTransaction(async (tx) => {
+    await tx.run("UPDATE users SET password_hash = $1 WHERE id = $2", passwordHash, record.user_id);
+    await tx.run("UPDATE password_resets SET used = TRUE WHERE id = $1", record.id);
+  });
   return res.json({ ok: true, message: "Contraseña actualizada" });
 });
 

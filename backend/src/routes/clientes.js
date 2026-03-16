@@ -1,5 +1,4 @@
 const express = require("express");
-const fs = require("node:fs");
 const xlsx = require("xlsx");
 const { getDb } = require("../db");
 const { authMiddleware } = require("./auth");
@@ -44,7 +43,7 @@ router.get("/exportar", authMiddleware, handleExport);
 router.get("/:numero", authMiddleware, async (req, res) => {
   const { numero } = req.params;
   const db = await getDb();
-  const cliente = await db.get("SELECT * FROM clientes WHERE numero_documento = ?", numero);
+  const cliente = await db.get("SELECT * FROM clientes WHERE numero_documento = $1", numero);
   if (!cliente) {
     return res.status(404).json({ ok: false, message: "Cliente no encontrado." });
   }
@@ -60,11 +59,10 @@ router.post("/", authMiddleware, async (req, res) => {
   const numero = payload.numero_documento;
   const now = new Date().toISOString();
   const db = await getDb();
-  const existing = await db.get("SELECT id FROM clientes WHERE numero_documento = ?", numero);
   await db.run(
     `INSERT INTO clientes
       (tipo_documento, numero_documento, dv, nombre, ciudad, direccion, telefono, email, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       ON CONFLICT(numero_documento) DO UPDATE SET
         tipo_documento=excluded.tipo_documento,
         dv=excluded.dv,
@@ -86,29 +84,6 @@ router.post("/", authMiddleware, async (req, res) => {
     now,
     now,
   );
-  if (!existing) {
-    const csvPath = process.env.CLIENTES_CSV_PATH;
-    if (csvPath) {
-      if (!fs.existsSync(csvPath)) {
-        const header =
-          "TIPO DE DOCUMENTO;NUMERO DE DOCUMENTO;DIGITO DE VERIFICACION;NOMBRE O RAZON SOCIAL;CIUDAD;DIRECCION;TELEFONO;CORREO ELECTRONICO\n";
-        fs.writeFileSync(csvPath, header);
-      }
-      const line = [
-        payload.tipo_documento || "",
-        numero,
-        payload.dv || "",
-        payload.nombre || "",
-        payload.ciudad || "",
-        payload.direccion || "",
-        payload.telefono || "",
-        payload.email || "",
-      ]
-        .map((value) => String(value).replaceAll(/[\r\n]+/g, " ")) // NOSONAR
-        .join(";");
-      fs.appendFileSync(csvPath, `${line}\n`);
-    }
-  }
   return res.json({ ok: true });
 });
 

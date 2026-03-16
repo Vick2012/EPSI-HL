@@ -12,7 +12,7 @@ Sistema de gestión interna para EPSI HL. Plataforma web que centraliza remision
 |------------|---------|-----------|
 | **Node.js** | LTS | Entorno de ejecución JavaScript |
 | **Express** | ^5.2 | Framework HTTP, rutas y middleware |
-| **SQLite** | ^5.1 | Base de datos embebida (archivo `iris.db`) |
+| **PostgreSQL** | 16+ | Base de datos principal en servidor separado |
 | **JWT** (jsonwebtoken) | ^9.0 | Tokens de sesión stateless |
 | **bcrypt** | ^6.0 | Hash seguro de contraseñas |
 | **PDFKit** | ^0.17 | Generación de PDFs de remisiones |
@@ -43,7 +43,7 @@ EPSI HL/
 ├── backend/
 │   ├── src/
 │   │   ├── index.js           # Punto de entrada, Express app
-│   │   ├── db.js              # Inicialización SQLite, tablas, admin por defecto
+│   │   ├── db.js              # Conexión PostgreSQL, migraciones y seed inicial
 │   │   ├── routes/
 │   │   │   ├── auth.js        # Login, JWT, recuperación de contraseña
 │   │   │   ├── clientes.js    # CRUD clientes, exportar Excel
@@ -57,9 +57,13 @@ EPSI HL/
 │   │       └── users.js       # Esquemas Zod para usuarios
 │   ├── test/                  # Tests Vitest
 │   │   └── validators/
-│   └── scripts/
+│   ├── scripts/
+│   │   ├── migrate-postgres.cjs           # Ejecuta migraciones SQL en PostgreSQL
+│   │   ├── migrate-sqlite-to-postgres.cjs # Migra datos desde iris.db
+│   │   └── generate-lcov.cjs
 │   ├── assets/                # Logos e imágenes para PDF
-│   ├── data/                  # iris.db (SQLite)
+│   ├── data/                  # Respaldo histórico y origen de migración SQLite
+│   ├── migrations/            # Esquema versionado PostgreSQL
 │   ├── .env                   # Variables de entorno (no versionado)
 │   └── package.json
 │
@@ -131,12 +135,29 @@ En `backend/` crear `.env`:
 
 ```env
 PORT=3001
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/epsi_hl
+PGSSL=0
 JWT_SECRET=tu-clave-secreta-segura
 ADMIN_DEFAULT_PASSWORD=Admin123!
 CORS_ORIGINS=http://localhost:5173
 ```
 
-### 3. Ejecutar
+### 3. Preparar PostgreSQL
+
+Con el `docker-compose.yml` local:
+
+```bash
+docker compose up -d postgres
+cd backend && npm run db:migrate
+```
+
+Si necesitas trasladar datos existentes desde `backend/data/iris.db`:
+
+```bash
+cd backend && npm run db:migrate:sqlite
+```
+
+### 4. Ejecutar
 
 **Terminal 1 – API:**
 ```bash
@@ -153,7 +174,7 @@ npm run dev
 - **API:** http://localhost:3001  
 - **Frontend:** http://localhost:5173  
 
-### 4. Acceso por defecto
+### 5. Acceso por defecto
 
 - **Usuario:** `admin` o `admin@epsihl.com`
 - **Contraseña:** `Admin123!` (o `ADMIN_DEFAULT_PASSWORD` en `.env`)
@@ -199,11 +220,14 @@ Antes de ejecutar `sonar-scanner`, ejecutar `npm run test:coverage` para generar
 | Variable | Descripción | Ejemplo |
 |----------|-------------|---------|
 | `PORT` | Puerto del API | `3001` |
+| `DATABASE_URL` | Cadena de conexión a PostgreSQL | `postgresql://user:pass@host:5432/db` |
+| `PGSSL` | Activa SSL para PostgreSQL | `0` o `1` |
 | `JWT_SECRET` | Clave para firmar tokens | Obligatorio en producción |
 | `ADMIN_DEFAULT_PASSWORD` | Contraseña del admin por defecto | `Admin123!` |
 | `CORS_ORIGINS` | Orígenes permitidos (comma-separated) | `http://localhost:5173` |
 | `TRUST_PROXY` | Activar si hay proxy inverso | `1` |
 | `PDF_OUTPUT_DIR` | Carpeta para guardar PDFs | Ruta absoluta |
+| `SQLITE_DB_PATH` | Ruta del SQLite origen para migración | `backend/data/iris.db` |
 | `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` | Configuración SMTP (recuperación contraseña) | — |
 | `LOGIN_RATE_WINDOW_MS` | Ventana para rate limit (ms) | `900000` |
 | `LOGIN_RATE_MAX` | Intentos máximos por ventana | `10` |
@@ -237,3 +261,4 @@ Antes de ejecutar `sonar-scanner`, ejecutar `npm run test:coverage` para generar
 ## Documentación adicional
 
 - `docs/paso-a-paso.md` — Guía de configuración y despliegue
+- `docs/postgres-cutover.md` — Checklist de corte y validación para PostgreSQL

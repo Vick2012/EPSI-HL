@@ -6,6 +6,7 @@ describe("validateRemision", () => {
     numero: "RM 001",
     fecha: "2025-03-07",
     metodoPago: "efectivo",
+    bodega: "INCOLTRANS",
     cliente: {
       nombre: "Cliente SAS",
       nit: "900123456",
