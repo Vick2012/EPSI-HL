@@ -1,19 +1,25 @@
 const { z, flattenError } = require("zod");
+const { isValidPlatformEmail } = require("../utils/platform-email");
 
 const roleSchema = z.enum(["GERENCIAL", "DIRECCION", "SUPERVISION", "ASISTENTE", "APOYO", "AUXILIARES"]);
+const statusSchema = z.enum(["ACTIVO", "INACTIVO"]);
+const platformEmailSchema = z
+  .email("Email inválido")
+  .refine((email) => isValidPlatformEmail(email), "El correo debe pertenecer al dominio @epsihl.*");
 
 const createUserSchema = z.object({
-  email: z.email(),
-  password: z.string().min(6),
+  email: platformEmailSchema,
   role: roleSchema,
   name: z.string().trim().optional(),
+  status: statusSchema.default("ACTIVO"),
 });
 
 const updateUserSchema = z.object({
-  email: z.email().optional(),
+  email: platformEmailSchema.optional(),
   password: z.string().min(6).optional(),
   role: roleSchema.optional(),
   name: z.string().trim().optional(),
+  status: statusSchema.optional(),
 });
 
 function validateUserCreate(payload) {

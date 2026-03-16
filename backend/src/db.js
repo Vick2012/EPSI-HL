@@ -17,9 +17,23 @@ async function initDb(db) {
       password_hash TEXT NOT NULL,
       role TEXT NOT NULL,
       name TEXT,
+      status TEXT NOT NULL DEFAULT 'ACTIVO',
+      visible_password TEXT,
       created_at TEXT NOT NULL
     );
   `);
+
+  const userColumns = await db.all("PRAGMA table_info(users)");
+  const hasStatusColumn = userColumns.some((column) => column.name === "status");
+  const hasVisiblePasswordColumn = userColumns.some((column) => column.name === "visible_password");
+
+  if (!hasStatusColumn) {
+    await db.exec("ALTER TABLE users ADD COLUMN status TEXT NOT NULL DEFAULT 'ACTIVO'");
+  }
+
+  if (!hasVisiblePasswordColumn) {
+    await db.exec("ALTER TABLE users ADD COLUMN visible_password TEXT");
+  }
 
   await db.exec(`
     CREATE TABLE IF NOT EXISTS password_resets (
@@ -70,17 +84,23 @@ async function initDb(db) {
       if (!existing) {
         const passwordHash = await bcrypt.hash(adminDefaultPassword, 10);
         await db.run(
-          "INSERT INTO users (email, password_hash, role, name, created_at) VALUES (?, ?, ?, ?, ?)",
+          "INSERT INTO users (email, password_hash, role, name, status, visible_password, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
           adminEmail,
           passwordHash,
           "GERENCIAL",
           "Administrador",
+          "ACTIVO",
+          adminDefaultPassword,
           new Date().toISOString()
         );
       }
     }
     await db.run(
       "UPDATE users SET role = 'GERENCIAL' WHERE email IN ('admin', 'admin@epsihl.com', 'admin@epsihl.com.co')"
+    );
+    await db.run(
+      "UPDATE users SET status = 'ACTIVO', visible_password = COALESCE(visible_password, ?) WHERE email IN ('admin', 'admin@epsihl.com', 'admin@epsihl.com.co')",
+      adminDefaultPassword
     );
   }
 }

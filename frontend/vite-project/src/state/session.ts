@@ -21,8 +21,11 @@ export const clearSession = () => {
   clearUserEmail();
 };
 
-export const canAccessUsersModule = (role: string | null) =>
+export const canAccessManagementModules = (role: string | null) =>
   role === "GERENCIAL" || role === "DIRECCION";
+
+export const canAccessUsersModule = (role: string | null) =>
+  canAccessManagementModules(role);
 
 export const getConsecutivo = () => {
   const raw = globalThis.localStorage.getItem(CONSECUTIVO_KEY);

@@ -1,5 +1,6 @@
 const express = require("express");
 const bcrypt = require("bcrypt");
+const crypto = require("node:crypto");
 const { getDb } = require("../db");
 const { authMiddleware, requireAnyRole } = require("./auth");
 const { validateUserCreate, validateUserUpdate } = require("../validators/users");
@@ -7,10 +8,18 @@ const { validateUserCreate, validateUserUpdate } = require("../validators/users"
 const router = express.Router();
 
 const USER_MANAGEMENT_ROLES = ["GERENCIAL", "DIRECCION"];
+const USER_ACTIVE_STATUS = "ACTIVO";
+
+function generateReadablePassword() {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+  return Array.from(crypto.randomBytes(10), (byte) => alphabet[byte % alphabet.length]).join("");
+}
 
 router.get("/", authMiddleware, requireAnyRole(USER_MANAGEMENT_ROLES), async (_req, res) => {
   const db = await getDb();
-  const users = await db.all("SELECT id, email, role, name, created_at FROM users ORDER BY id DESC");
+  const users = await db.all(
+    "SELECT id, email, role, name, status, visible_password, created_at FROM users ORDER BY CASE WHEN status = 'ACTIVO' THEN 0 ELSE 1 END, id DESC"
+  );
   return res.json({ ok: true, users });
 });
 
@@ -21,21 +30,25 @@ router.post("/", authMiddleware, requireAnyRole(USER_MANAGEMENT_ROLES), async (r
   }
   const normalizedEmail = parse.data.email.trim().toLowerCase();
   const normalizedRole = parse.data.role.toUpperCase();
+  const normalizedStatus = (parse.data.status || USER_ACTIVE_STATUS).toUpperCase();
   const db = await getDb();
   const existing = await db.get("SELECT id FROM users WHERE email = ?", normalizedEmail);
   if (existing) {
     return res.status(409).json({ ok: false, message: "El usuario ya existe" });
   }
-  const passwordHash = await bcrypt.hash(parse.data.password, 10);
+  const generatedPassword = generateReadablePassword();
+  const passwordHash = await bcrypt.hash(generatedPassword, 10);
   await db.run(
-    "INSERT INTO users (email, password_hash, role, name, created_at) VALUES (?, ?, ?, ?, ?)",
+    "INSERT INTO users (email, password_hash, role, name, status, visible_password, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
     normalizedEmail,
     passwordHash,
     normalizedRole,
     String(parse.data.name || "").trim(),
+    normalizedStatus,
+    generatedPassword,
     new Date().toISOString()
   );
-  return res.json({ ok: true });
+  return res.json({ ok: true, generatedPassword });
 });
 
 router.put("/:id", authMiddleware, requireAnyRole(USER_MANAGEMENT_ROLES), async (req, res) => {
@@ -44,8 +57,8 @@ router.put("/:id", authMiddleware, requireAnyRole(USER_MANAGEMENT_ROLES), async 
   if (!parse.ok) {
     return res.status(400).json({ ok: false, errors: parse.errors });
   }
-  const { email, role, name, password } = parse.data;
-  if (!email && !role && !name && !password) {
+  const { email, role, name, password, status } = parse.data;
+  if (!email && !role && !name && !password && !status) {
     return res.status(400).json({ ok: false, message: "Sin cambios para actualizar" });
   }
   const db = await getDb();
@@ -65,11 +78,13 @@ router.put("/:id", authMiddleware, requireAnyRole(USER_MANAGEMENT_ROLES), async 
     passwordHash = await bcrypt.hash(password, 10);
   }
   await db.run(
-    "UPDATE users SET email = COALESCE(?, email), role = COALESCE(?, role), name = COALESCE(?, name), password_hash = COALESCE(?, password_hash) WHERE id = ?",
+    "UPDATE users SET email = COALESCE(?, email), role = COALESCE(?, role), name = COALESCE(?, name), status = COALESCE(?, status), password_hash = COALESCE(?, password_hash), visible_password = COALESCE(?, visible_password) WHERE id = ?",
     email ? String(email).trim().toLowerCase() : null,
     role ? String(role).toUpperCase() : null,
     name || null,
+    status ? String(status).toUpperCase() : null,
     passwordHash || null,
+    password || null,
     id
   );
   return res.json({ ok: true });
@@ -93,9 +108,9 @@ router.post("/:id/reset", authMiddleware, requireAnyRole(USER_MANAGEMENT_ROLES),
   if (!user) {
     return res.status(404).json({ ok: false, message: "Usuario no encontrado" });
   }
-  const tempPassword = Math.random().toString(36).slice(-8);
+  const tempPassword = generateReadablePassword();
   const passwordHash = await bcrypt.hash(tempPassword, 10);
-  await db.run("UPDATE users SET password_hash = ? WHERE id = ?", passwordHash, id);
+  await db.run("UPDATE users SET password_hash = ?, visible_password = ? WHERE id = ?", passwordHash, tempPassword, id);
   return res.json({ ok: true, tempPassword });
 });
 

@@ -4,6 +4,7 @@ const bcrypt = require("bcrypt");
 const { getDb } = require("../db");
 const crypto = require("node:crypto");
 const nodemailer = require("nodemailer");
+const { isValidPlatformEmail, normalizePlatformEmail } = require("../utils/platform-email");
 
 const router = express.Router();
 
@@ -23,7 +24,7 @@ function signToken(user) {
   });
 }
 
-function authMiddleware(req, res, next) {
+async function authMiddleware(req, res, next) {
   if (!JWT_SECRET && process.env.NODE_ENV !== "development") {
     return res.status(500).json({ ok: false, message: "JWT_SECRET no configurado" });
   }
@@ -34,7 +35,12 @@ function authMiddleware(req, res, next) {
   }
   try {
     const payload = jwt.verify(token, getJwtSecret());
-    req.user = payload;
+    const db = await getDb();
+    const currentUser = await db.get("SELECT id, email, role, status FROM users WHERE id = ?", payload.sub);
+    if (!currentUser || currentUser.status !== "ACTIVO") {
+      return res.status(401).json({ ok: false, message: "Usuario inactivo o no disponible" });
+    }
+    req.user = { sub: currentUser.id, email: currentUser.email, role: currentUser.role };
     return next();
   } catch (err) { // NOSONAR - Excepción manejada: retorna 401 y log en dev
     if (process.env.NODE_ENV === "development") {
@@ -56,14 +62,20 @@ function requireAnyRole(roles) {
 
 router.post("/login", async (req, res) => {
   const { email, password } = req.body || {};
-  const normalizedEmail = String(email || "").trim().toLowerCase();
+  const normalizedEmail = normalizePlatformEmail(email);
   if (!normalizedEmail || !password) {
     return res.status(400).json({ ok: false, message: "Email y contraseña requeridos" });
+  }
+  if (!isValidPlatformEmail(normalizedEmail)) {
+    return res.status(400).json({ ok: false, message: "Solo se permiten correos con dominio @epsihl.*" });
   }
   const db = await getDb();
   const user = await db.get("SELECT * FROM users WHERE email = ?", normalizedEmail);
   if (!user) {
     return res.status(401).json({ ok: false, message: "Credenciales inválidas" });
+  }
+  if (user.status && user.status !== "ACTIVO") {
+    return res.status(403).json({ ok: false, message: "El usuario está inactivo" });
   }
   const ok = await bcrypt.compare(password, user.password_hash);
   if (!ok) {
@@ -82,9 +94,12 @@ router.get("/me", authMiddleware, (req, res) => {
 
 router.post("/request-reset", async (req, res) => {
   const { email } = req.body || {};
-  const normalizedEmail = String(email || "").trim().toLowerCase();
+  const normalizedEmail = normalizePlatformEmail(email);
   if (!normalizedEmail) {
     return res.status(400).json({ ok: false, message: "Email requerido" });
+  }
+  if (!isValidPlatformEmail(normalizedEmail)) {
+    return res.status(400).json({ ok: false, message: "Solo se permiten correos con dominio @epsihl.*" });
   }
   const db = await getDb();
   const user = await db.get("SELECT id, email FROM users WHERE email = ?", normalizedEmail);

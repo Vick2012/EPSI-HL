@@ -1111,6 +1111,41 @@ body {
   color: #344054;
 }
 
+.users-layout {
+  display: grid;
+  gap: 20px;
+}
+
+.users-card {
+  gap: 16px;
+}
+
+.users-create-card {
+  border-left: 4px solid #1f3f83;
+}
+
+.users-consult-card {
+  border-left: 4px solid #f19a3e;
+}
+
+.users-section-heading {
+  display: grid;
+  gap: 6px;
+}
+
+.users-section-heading h2,
+.users-subsection-header h3 {
+  text-align: left;
+}
+
+.users-section-kicker {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #1f3f83;
+}
+
 .primary {
   margin-top: auto;
   padding: 10px 14px;
@@ -1241,6 +1276,10 @@ select {
   color: #101828;
 }
 
+.users-password-note {
+  border-style: dashed;
+}
+
 .items-table {
   display: grid;
   gap: 8px;
@@ -1287,6 +1326,47 @@ select {
   gap: 8px;
 }
 
+.users-subsection {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e4e7ec;
+}
+
+.users-subsection-muted {
+  background: #fcfcfd;
+}
+
+.users-subsection-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.users-subsection-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #1f3f83;
+}
+
+.users-count-badge {
+  min-width: 32px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(31, 63, 131, 0.12);
+  color: #1f3f83;
+  font-weight: 700;
+  text-align: center;
+}
+
+.users-count-badge-muted {
+  background: rgba(241, 154, 62, 0.16);
+  color: #8a4b0f;
+}
+
 .table-head,
 .table-row {
   display: grid;
@@ -1309,6 +1389,68 @@ select {
 .table-row {
   padding: 8px 0;
   border-bottom: 1px solid #eef2f6;
+}
+
+.users-table-head,
+.users-table-row {
+  grid-template-columns: minmax(140px, 1.1fr) minmax(180px, 1.2fr) minmax(130px, 0.8fr) minmax(100px, 0.7fr) minmax(230px, 1.2fr) minmax(220px, 1fr);
+}
+
+.users-table-row {
+  gap: 14px;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 88px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.status-pill-active {
+  background: rgba(18, 183, 106, 0.12);
+  color: #027a48;
+}
+
+.status-pill-inactive {
+  background: rgba(179, 32, 45, 0.12);
+  color: #b3202d;
+}
+
+.user-password-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-password-visible {
+  min-width: 0;
+  width: 100%;
+  background: #ffffff;
+  font-family: inherit;
+}
+
+.user-copy-btn {
+  margin-top: 0;
+  white-space: nowrap;
+}
+
+.users-actions .secondary {
+  margin-top: 0;
+}
+
+.users-empty-state {
+  grid-column: 1 / -1;
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px dashed #d0d5dd;
+  text-align: center;
+  color: #667085;
+  background: #ffffff;
 }
 
 .table-body {

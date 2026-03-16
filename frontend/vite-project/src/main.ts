@@ -14,6 +14,8 @@ const formatValidationErrors = (errors: { formErrors?: string[]; fieldErrors?: R
   }
   return parts.filter(Boolean).join(". ");
 };
+const PLATFORM_EMAIL_REGEX = /^[a-z0-9._%+-]+@epsihl\.[a-z0-9.-]+$/i;
+const isValidPlatformEmail = (value: string) => PLATFORM_EMAIL_REGEX.test(value.trim().toLowerCase());
 import {
   generarRemisionPdf,
   fetchRemision,
@@ -24,6 +26,7 @@ import {
 } from "./api/remisiones";
 import { createUser, deleteUser, fetchUsers, resetUserPassword, updateUser } from "./api/users";
 import {
+  canAccessManagementModules,
   canAccessUsersModule,
   clearSession,
   formatConsecutivo,
@@ -58,7 +61,7 @@ app.innerHTML = `
         <p class="login-page-subtitle">Ingrese sus credenciales para continuar</p>
         <div class="login-input-wrap">
           <label class="login-label">Usuario o correo electrónico</label>
-          <input id="login-email" type="text" placeholder="admin o correo@empresa.com" autocomplete="username" />
+          <input id="login-email" type="text" placeholder="usuario@epsihl.com" autocomplete="username" />
         </div>
         <div class="login-input-wrap password-field">
           <label class="login-label">Contraseña</label>
@@ -77,7 +80,7 @@ app.innerHTML = `
     <div class="login-card">
       <h2>Recuperar contraseña</h2>
       <label>Email
-        <input id="reset-email" type="email" placeholder="tu@correo.com" />
+        <input id="reset-email" type="email" placeholder="tu@epsihl.com" />
       </label>
       <label>Nueva contraseña
         <div class="password-field">
@@ -116,19 +119,19 @@ app.innerHTML = `
           <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>
           REMISIONES
         </button>
-        <button class="nav-item" disabled data-nav="turno">
+        <button class="nav-item" disabled data-nav="turno" data-management-only>
           <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
           TURNO
         </button>
-        <button class="nav-item" disabled data-nav="reportes">
+        <button class="nav-item" disabled data-nav="reportes" data-management-only>
           <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg></span>
           REPORTES
         </button>
-        <button class="nav-item" disabled data-nav="bi">
+        <button class="nav-item" disabled data-nav="bi" data-management-only>
           <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
           INTELIGENCIA DE NEGOCIO (BI)
         </button>
-        <button class="nav-item" data-go-usuarios data-nav="usuarios">
+        <button class="nav-item" data-go-usuarios data-nav="usuarios" data-management-only>
           <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
           USUARIOS Y CONTRASEÑAS
         </button>
@@ -159,25 +162,25 @@ app.innerHTML = `
       <section id="home-view" class="home">
         <section class="quick-access card">
           <h2 class="quick-access-title">Acceso rápido</h2>
-          <p class="quick-access-subtitle">Navega directamente a cualquier módulo</p>
+          <p id="quick-access-subtitle" class="quick-access-subtitle">Navega directamente a cualquier módulo</p>
           <div class="quick-access-grid">
             <button class="quick-access-btn" data-go-remisiones>
               <span class="quick-access-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>
               <span>Remisiones</span>
             </button>
-            <button class="quick-access-btn" disabled>
+            <button class="quick-access-btn" disabled data-management-only>
               <span class="quick-access-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
               <span>Turno</span>
             </button>
-            <button class="quick-access-btn" disabled>
+            <button class="quick-access-btn" disabled data-management-only>
               <span class="quick-access-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg></span>
               <span>Reportes</span>
             </button>
-            <button class="quick-access-btn" disabled>
+            <button class="quick-access-btn" disabled data-management-only>
               <span class="quick-access-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
               <span>Inteligencia de negocio (BI)</span>
             </button>
-            <button class="quick-access-btn" data-go-usuarios>
+            <button class="quick-access-btn" data-go-usuarios data-management-only>
               <span class="quick-access-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
               <span>Usuarios y contraseñas</span>
             </button>
@@ -187,15 +190,15 @@ app.innerHTML = `
           <div class="hero-content">
             <span class="pill">Plataforma diseñada para EPSI HL</span>
             <h1>Gestión integral al Servicio de nuestros Colaboradores</h1>
-            <p>
+            <p id="home-hero-description">
               Centraliza la operación diaria en un solo lugar: remisiones en PDF,
               turnos del personal, usuarios con roles y reportes BI.
             </p>
             <div class="hero-actions">
               <button class="primary" data-go-remisiones>Crear remisión</button>
-              <button class="secondary" disabled>Ver turnos</button>
+              <button class="secondary" disabled data-management-only>Ver turnos</button>
             </div>
-            <div class="hero-stats">
+            <div class="hero-stats" data-management-only>
               <div>
                 <strong>4</strong>
                 <span>Módulos</span>
@@ -210,7 +213,7 @@ app.innerHTML = `
               </div>
             </div>
           </div>
-          <div class="hero-card">
+          <div class="hero-card" data-management-only>
             <div class="hero-card-title">Resumen rápido</div>
             <ul>
               <li>Remisiones con consecutivo y envío automático</li>
@@ -229,19 +232,19 @@ app.innerHTML = `
             <p>Generación automática con plantilla EPSI HL y envío por email.</p>
             <button class="primary" data-go-remisiones>Ir a remisiones</button>
           </article>
-          <article class="module-card">
+          <article class="module-card" data-management-only>
             <div class="module-icon"><img src="/icon-turnos.png" alt="Turnos" /></div>
             <h2>Turnos</h2>
             <p>Calendario, asignación y panel de empleado.</p>
             <button class="secondary" disabled>Próximamente</button>
           </article>
-          <article class="module-card">
+          <article class="module-card" data-management-only>
             <div class="module-icon"><img src="/icon-usuarios.png" alt="Usuarios y roles" /></div>
             <h2>Usuarios y roles</h2>
             <p>Gestión de usuarios, roles y permisos.</p>
             <button class="secondary user-cta" data-go-usuarios>Ir a usuarios</button>
           </article>
-          <article class="module-card">
+          <article class="module-card" data-management-only>
             <div class="module-icon"><img src="/icon-bi.png" alt="BI" /></div>
             <h2>BI</h2>
             <p>Estadísticas semanales/mensuales y reportes.</p>
@@ -403,9 +406,13 @@ app.innerHTML = `
         </div>
       </section>
 
-      <section id="users-view" class="hidden">
-        <section class="card">
-          <h2>Crear usuario</h2>
+      <section id="users-view" class="hidden users-layout">
+        <section class="card users-card users-create-card">
+          <div class="users-section-heading">
+            <span class="users-section-kicker">Subsección 1</span>
+            <h2>Creación y edición de usuarios</h2>
+            <p>La contraseña inicial se genera automáticamente cuando guardas el usuario.</p>
+          </div>
           <div class="form-grid">
             <label>Nombre
               <input id="user-name" type="text" placeholder="Nombre completo" />
@@ -423,10 +430,14 @@ app.innerHTML = `
                 <option value="AUXILIARES">AUXILIARES</option>
               </select>
             </label>
-            <label>Contraseña
-              <input id="user-password" type="password" placeholder="********" />
+            <label>Estado
+              <select id="user-status">
+                <option value="ACTIVO">ACTIVO</option>
+                <option value="INACTIVO">INACTIVO</option>
+              </select>
             </label>
           </div>
+          <div class="readonly-field users-password-note">La contraseña se asignará automáticamente y quedará visible en el panel de consulta para copiar y pegar.</div>
           <div class="client-actions">
             <button id="user-create" class="primary">Crear usuario</button>
             <button id="user-cancel" class="secondary hidden" type="button">Cancelar edición</button>
@@ -434,17 +445,47 @@ app.innerHTML = `
           </div>
         </section>
 
-        <section class="card">
-          <h2>Listado de usuarios</h2>
-          <div class="table">
-            <div class="table-head">
-              <span>Nombre completo</span>
-              <span>Email</span>
-              <span>Rol</span>
-              <span>Contraseña</span>
-              <span>Acciones</span>
+        <section class="card users-card users-consult-card">
+          <div class="users-section-heading">
+            <span class="users-section-kicker">Subsección 2</span>
+            <h2>Consulta de usuarios activos</h2>
+            <p>Revisa el estado de cada usuario y copia la contraseña visible cuando necesites compartirla.</p>
+          </div>
+
+          <div class="users-subsection">
+            <div class="users-subsection-header">
+              <h3>Usuarios activos</h3>
+              <span id="users-active-count" class="users-count-badge">0</span>
             </div>
-            <div id="users-list" class="table-body"></div>
+            <div class="table">
+              <div class="table-head users-table-head">
+                <span>Nombre completo</span>
+                <span>Email</span>
+                <span>Rol</span>
+                <span>Estado</span>
+                <span>Contraseña visible</span>
+                <span>Acciones</span>
+              </div>
+              <div id="users-active-list" class="table-body"></div>
+            </div>
+          </div>
+
+          <div class="users-subsection users-subsection-muted">
+            <div class="users-subsection-header">
+              <h3>Usuarios inactivos</h3>
+              <span id="users-inactive-count" class="users-count-badge users-count-badge-muted">0</span>
+            </div>
+            <div class="table">
+              <div class="table-head users-table-head">
+                <span>Nombre completo</span>
+                <span>Email</span>
+                <span>Rol</span>
+                <span>Estado</span>
+                <span>Contraseña visible</span>
+                <span>Acciones</span>
+              </div>
+              <div id="users-inactive-list" class="table-body"></div>
+            </div>
           </div>
         </section>
       </section>
@@ -501,7 +542,7 @@ const currentUserEl = app.querySelector<HTMLSpanElement>("#current-user")!;
 const userNameInput = app.querySelector<HTMLInputElement>("#user-name")!;
 const userEmailInput = app.querySelector<HTMLInputElement>("#user-email")!;
 const userRoleSelect = app.querySelector<HTMLSelectElement>("#user-role")!;
-const userPasswordInput = app.querySelector<HTMLInputElement>("#user-password")!;
+const userStatusSelect = app.querySelector<HTMLSelectElement>("#user-status")!;
 const userCreateBtn = app.querySelector<HTMLButtonElement>("#user-create")!;
 const userCancelBtn = app.querySelector<HTMLButtonElement>("#user-cancel")!;
 let editingUserId: string | null = null;
@@ -509,7 +550,12 @@ let editingRemisionNumero: string | null = null;
 let wizardCurrentStep = 1;
 const WIZARD_MAX_STEP = 3;
 const usersStatus = app.querySelector<HTMLSpanElement>("#users-status")!;
-const usersList = app.querySelector<HTMLDivElement>("#users-list")!;
+const usersActiveList = app.querySelector<HTMLDivElement>("#users-active-list")!;
+const usersInactiveList = app.querySelector<HTMLDivElement>("#users-inactive-list")!;
+const usersActiveCount = app.querySelector<HTMLSpanElement>("#users-active-count")!;
+const usersInactiveCount = app.querySelector<HTMLSpanElement>("#users-inactive-count")!;
+const quickAccessSubtitle = app.querySelector<HTMLParagraphElement>("#quick-access-subtitle")!;
+const homeHeroDescription = app.querySelector<HTMLParagraphElement>("#home-hero-description")!;
 const loginEmail = app.querySelector<HTMLInputElement>("#login-email")!;
 const loginPassword = app.querySelector<HTMLInputElement>("#login-password")!;
 const loginEye = app.querySelector<HTMLButtonElement>("#login-eye")!;
@@ -614,9 +660,19 @@ const closeLogin = () => {
 
 const applyRole = (role: string | null) => {
   const isGerencial = role === "GERENCIAL";
+  const canAccessManagement = canAccessManagementModules(role);
   const isEditing = Boolean(editingRemisionNumero);
+  app.querySelectorAll<HTMLElement>("[data-management-only]").forEach((element) => {
+    element.classList.toggle("hidden", !canAccessManagement);
+  });
+  quickAccessSubtitle.textContent = canAccessManagement
+    ? "Navega directamente a cualquier módulo"
+    : "Accede directamente al módulo disponible para tu perfil";
+  homeHeroDescription.textContent = canAccessManagement
+    ? "Centraliza la operación diaria en un solo lugar: remisiones en PDF, turnos del personal, usuarios con roles y reportes BI."
+    : "Gestiona y genera remisiones en PDF desde un entorno simple, rápido y enfocado en tu operación diaria.";
   app.querySelectorAll<HTMLButtonElement>("[data-go-usuarios]").forEach((button) => {
-    button.disabled = !canAccessUsersModule(role);
+    button.disabled = !canAccessManagement;
   });
   remisionNumeroInput.readOnly = !isGerencial || isEditing;
   remisionAnuladaWrap.classList.toggle("hidden", !isGerencial);
@@ -672,6 +728,11 @@ const login = async () => {
   const password = loginPassword.value;
   if (!email || !password) {
     loginError.textContent = "Email y contraseña requeridos.";
+    loginError.classList.remove("hidden");
+    return;
+  }
+  if (!isValidPlatformEmail(email)) {
+    loginError.textContent = "Solo se permiten correos con dominio @epsihl.*";
     loginError.classList.remove("hidden");
     return;
   }
@@ -1287,6 +1348,67 @@ app.querySelector("#generar")!.addEventListener("click", async () => {
   }
 });
 
+type ManagedUser = {
+  id: number | string;
+  name?: string;
+  email: string;
+  role: string;
+  status?: string;
+  visible_password?: string | null;
+};
+
+const escapeHtml = (value: string) => value
+  .replaceAll("&", "&amp;")
+  .replaceAll("<", "&lt;")
+  .replaceAll(">", "&gt;")
+  .replaceAll('"', "&quot;")
+  .replaceAll("'", "&#39;");
+
+const normalizeUserStatus = (status?: string) => (status === "INACTIVO" ? "INACTIVO" : "ACTIVO");
+
+const resetUserForm = () => {
+  editingUserId = null;
+  userNameInput.value = "";
+  userEmailInput.value = "";
+  userRoleSelect.value = "GERENCIAL";
+  userStatusSelect.value = "ACTIVO";
+  userCreateBtn.textContent = "Crear usuario";
+  userCancelBtn.classList.add("hidden");
+};
+
+const buildUserRows = (users: ManagedUser[], emptyMessage: string) => {
+  if (users.length === 0) {
+    return `<div class="users-empty-state">${emptyMessage}</div>`;
+  }
+
+  return users.map((user) => {
+    const name = escapeHtml(user.name || "Sin nombre");
+    const email = escapeHtml(user.email || "");
+    const role = escapeHtml(user.role || "");
+    const status = normalizeUserStatus(user.status);
+    const visiblePassword = user.visible_password ? escapeHtml(user.visible_password) : "";
+    const copyButtonState = visiblePassword ? "" : "disabled";
+
+    return `
+      <div class="table-row users-table-row">
+        <span>${name}</span>
+        <span>${email}</span>
+        <span>${role}</span>
+        <span><span class="status-pill ${status === "ACTIVO" ? "status-pill-active" : "status-pill-inactive"}">${status}</span></span>
+        <div class="user-password-cell">
+          <input class="user-password-visible" type="text" readonly value="${visiblePassword}" placeholder="Sin contraseña visible" />
+          <button class="secondary user-copy-btn" type="button" data-copy-password="${visiblePassword}" ${copyButtonState}>Copiar</button>
+        </div>
+        <div class="actions users-actions">
+          <button class="secondary" type="button" data-edit-user="${user.id}">Modificar</button>
+          <button class="secondary" type="button" data-reset-user="${user.id}">Reset</button>
+          <button class="secondary" type="button" data-delete-user="${user.id}">Eliminar</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+};
+
 const loadUsers = async () => {
   const token = getToken();
   if (!token) return;
@@ -1298,43 +1420,47 @@ const loadUsers = async () => {
       return;
     }
     const data = await response.json();
-    usersList.innerHTML = data.users
-    .map(
-      (user: any) => `
-        <div class="table-row">
-          <span>${user.name || "Sin nombre"}</span>
-          <span>${user.email}</span>
-          <span>${user.role}</span>
-          <span>********</span>
-          <div class="actions">
-            <button class="secondary" data-edit-user="${user.id}">Modificar</button>
-            <button class="secondary" data-reset-user="${user.id}">Reset</button>
-            <button class="secondary" data-delete-user="${user.id}">Eliminar</button>
-          </div>
-  </div>
-`
-    )
-    .join("");
+    const users = (data.users || []) as ManagedUser[];
+    const activeUsers = users.filter((user) => normalizeUserStatus(user.status) === "ACTIVO");
+    const inactiveUsers = users.filter((user) => normalizeUserStatus(user.status) === "INACTIVO");
+
+    usersActiveCount.textContent = String(activeUsers.length);
+    usersInactiveCount.textContent = String(inactiveUsers.length);
+    usersActiveList.innerHTML = buildUserRows(activeUsers, "No hay usuarios activos.");
+    usersInactiveList.innerHTML = buildUserRows(inactiveUsers, "No hay usuarios inactivos.");
     usersStatus.textContent = "";
 
-    usersList.querySelectorAll("[data-edit-user]").forEach((btn) => {
+    app.querySelectorAll("[data-edit-user]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const id = (btn as HTMLButtonElement).dataset.editUser;
         if (!id) return;
-        const user = data.users.find((u: any) => String(u.id) === String(id));
+        const user = users.find((u) => String(u.id) === String(id));
         if (!user) return;
         editingUserId = String(id);
         userNameInput.value = user.name || "";
         userEmailInput.value = user.email || "";
         userRoleSelect.value = user.role || "GERENCIAL";
-        userPasswordInput.value = "";
+        userStatusSelect.value = normalizeUserStatus(user.status);
         userCreateBtn.textContent = "Guardar cambios";
         userCancelBtn.classList.remove("hidden");
         usersStatus.textContent = "Editando usuario...";
       });
     });
 
-    usersList.querySelectorAll("[data-reset-user]").forEach((btn) => {
+    app.querySelectorAll("[data-copy-password]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const password = (btn as HTMLButtonElement).dataset.copyPassword || "";
+        if (!password) return;
+        try {
+          await navigator.clipboard.writeText(password);
+          usersStatus.textContent = "Contraseña copiada al portapapeles.";
+        } catch {
+          usersStatus.textContent = "No se pudo copiar la contraseña.";
+        }
+      });
+    });
+
+    app.querySelectorAll("[data-reset-user]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const id = (btn as HTMLButtonElement).dataset.resetUser;
         if (!id) return;
@@ -1343,12 +1469,13 @@ const loadUsers = async () => {
           usersStatus.textContent = "No se pudo resetear.";
           return;
         }
-        const data = await responseReset.json();
-        usersStatus.textContent = `Nueva contraseña temporal: ${data.tempPassword}`;
+        const resetData = await responseReset.json();
+        await loadUsers();
+        usersStatus.textContent = `Nueva contraseña temporal: ${resetData.tempPassword}`;
       });
     });
 
-    usersList.querySelectorAll("[data-delete-user]").forEach((btn) => {
+    app.querySelectorAll("[data-delete-user]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const id = (btn as HTMLButtonElement).dataset.deleteUser;
         if (!id) return;
@@ -1378,53 +1505,40 @@ userCreateBtn.addEventListener("click", async () => {
     name: userNameInput.value.trim(),
     email: userEmailInput.value.trim(),
     role: userRoleSelect.value,
+    status: userStatusSelect.value,
   };
-  const passwordValue = userPasswordInput.value;
   if (!basePayload.email) {
     usersStatus.textContent = "Email es obligatorio.";
     return;
   }
-  const isEditing = Boolean(editingUserId);
-  if (!isEditing && !passwordValue) {
-    usersStatus.textContent = "La contraseña es obligatoria.";
+  if (!isValidPlatformEmail(basePayload.email)) {
+    usersStatus.textContent = "El correo del usuario debe pertenecer al dominio @epsihl.*";
     return;
   }
-  const payload = {
-    ...basePayload,
-    ...(passwordValue ? { password: passwordValue } : {}),
-  };
+  const isEditing = Boolean(editingUserId);
   usersStatus.textContent = isEditing ? "Guardando cambios..." : "Creando usuario...";
   try {
     const response = isEditing && editingUserId
-      ? await updateUser(editingUserId, payload, token)
-      : await createUser(payload, token);
+      ? await updateUser(editingUserId, basePayload, token)
+      : await createUser(basePayload, token);
     if (!response.ok) {
       const msg = await response.text();
       usersStatus.textContent = msg || (isEditing ? "No se pudo actualizar el usuario." : "No se pudo crear el usuario.");
       return;
     }
-    userNameInput.value = "";
-    userEmailInput.value = "";
-    userPasswordInput.value = "";
-    userRoleSelect.value = "GERENCIAL";
-    usersStatus.textContent = isEditing ? "Usuario actualizado." : "Usuario creado.";
-    editingUserId = null;
-    userCreateBtn.textContent = "Crear usuario";
-    userCancelBtn.classList.add("hidden");
-    loadUsers();
+    const responseData = await response.json();
+    resetUserForm();
+    await loadUsers();
+    usersStatus.textContent = isEditing
+      ? "Usuario actualizado."
+      : `Usuario creado. Contraseña generada: ${responseData.generatedPassword}`;
   } catch {
     usersStatus.textContent = isEditing ? "Error actualizando usuario." : "Error creando usuario.";
   }
 });
 
 userCancelBtn.addEventListener("click", () => {
-  editingUserId = null;
-  userNameInput.value = "";
-  userEmailInput.value = "";
-  userPasswordInput.value = "";
-  userRoleSelect.value = "GERENCIAL";
-  userCreateBtn.textContent = "Crear usuario";
-  userCancelBtn.classList.add("hidden");
+  resetUserForm();
   usersStatus.textContent = "Edición cancelada.";
 });
 
@@ -1481,6 +1595,11 @@ resetRequest.addEventListener("click", async () => {
   const email = resetEmail.value.trim();
   if (!email) {
     resetStatus.textContent = "Ingresa el correo.";
+    resetStatus.classList.remove("hidden");
+    return;
+  }
+  if (!isValidPlatformEmail(email)) {
+    resetStatus.textContent = "Solo se permiten correos con dominio @epsihl.*";
     resetStatus.classList.remove("hidden");
     return;
   }
