@@ -398,6 +398,13 @@ function drawPagoFirma(doc, remision, logoPath) {
     width: 170,
     align: "center",
   });
+  doc
+    .fontSize(8)
+    .fillColor(COLORS.gray)
+    .text(`Bodega: ${String(remision.bodega || "").toUpperCase()}`, left + 8, top + 136, {
+      width: 220,
+      align: "left",
+    });
 
   // Marca de agua deshabilitada por solicitud
 }

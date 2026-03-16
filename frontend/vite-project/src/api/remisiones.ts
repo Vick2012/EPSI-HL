@@ -12,6 +12,7 @@ export type RemisionPayload = {
   fecha: string;
   metodoPago: "efectivo" | "nequi" | "bancolombia";
   observaciones?: string;
+  bodega: string;
   anulada?: boolean;
   cliente: {
     tipoDocumento?: string;

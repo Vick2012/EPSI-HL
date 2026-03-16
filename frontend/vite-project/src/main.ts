@@ -387,6 +387,11 @@ app.innerHTML = `
               <div class="card wizard-card">
                 <h2>Paso 3: Resumen y generación</h2>
                 <p class="wizard-hint">Revisa los totales y genera el PDF cuando todo esté correcto.</p>
+                <div class="wizard-bodega-wrap">
+                  <label class="wizard-bodega-field">Bodega
+                    <input id="remision-bodega" class="uppercase-input" type="text" placeholder="            " />
+                  </label>
+                </div>
                 <div class="totals wizard-totals">
                   <div>Subtotal: <span id="subtotal">$ 0</span></div>
                   <div>Total: <span id="total">$ 0</span></div>
@@ -516,6 +521,7 @@ const subtotalEl = app.querySelector<HTMLSpanElement>("#subtotal")!;
 const totalEl = app.querySelector<HTMLSpanElement>("#total")!;
 const statusEl = app.querySelector<HTMLDivElement>("#status")!;
 const generarBtn = app.querySelector<HTMLButtonElement>("#generar")!;
+const remisionBodegaInput = app.querySelector<HTMLInputElement>("#remision-bodega")!;
 const fechaEl = app.querySelector<HTMLDivElement>("#remision-fecha")!;
 const buscarRemisionSection = app.querySelector<HTMLDivElement>("#remision-buscar")!;
 const buscarRemisionNumeroInput = app.querySelector<HTMLInputElement>("#buscar-remision-numero")!;
@@ -603,7 +609,7 @@ const goHome = () => {
   homeView.classList.remove("hidden");
   remisionView.classList.add("hidden");
   usersView.classList.add("hidden");
-  backButton.disabled = true;
+  backButton.disabled = false;
   setActiveNav("inicio");
 };
 
@@ -621,6 +627,7 @@ const clearRemisionForm = () => {
   addItemRow();
   (app.querySelector<HTMLSelectElement>("#remision-pago")!).value = "efectivo";
   (app.querySelector<HTMLInputElement>("#remision-observaciones")!).value = "";
+  remisionBodegaInput.value = "";
   (app.querySelector<HTMLInputElement>("#remision-total")!).value = "0";
   remisionAnuladaInput.checked = false;
   buscarRemisionNumeroInput.value = "";
@@ -796,6 +803,10 @@ const updateFechaHora = () => {
     hour12: false,
   });
   fechaEl.textContent = display;
+};
+
+const normalizeUppercaseInput = (input: HTMLInputElement) => {
+  input.value = input.value.toUpperCase();
 };
 
 type Cliente = {
@@ -1024,6 +1035,14 @@ const validateWizardStep = (step: number): boolean => {
     }
     return true;
   }
+  if (step === 3) {
+    const bodega = remisionBodegaInput.value.trim();
+    if (!bodega) {
+      wizardErrorEl.textContent = "Ingresa la bodega para continuar.";
+      return false;
+    }
+    return true;
+  }
   return true;
 };
 
@@ -1199,6 +1218,7 @@ buscarRemisionBtn.addEventListener("click", async () => {
     remisionAnuladaInput.checked = Boolean(remision.anulada);
     (app.querySelector<HTMLSelectElement>("#remision-pago")!).value = remision.metodoPago || "efectivo";
     (app.querySelector<HTMLInputElement>("#remision-observaciones")!).value = remision.observaciones || "";
+    remisionBodegaInput.value = String(remision.bodega || "").toUpperCase();
     (app.querySelector<HTMLInputElement>("#remision-total")!).value = String(remision.total || 0);
     clienteNombreInput.value = remision.cliente?.nombre || "";
     clienteNitInput.value = remision.cliente?.nit || "";
@@ -1272,6 +1292,7 @@ const buildRemisionPayload = (): RemisionPayload => {
     fecha: new Date().toISOString(),
     metodoPago: app.querySelector<HTMLSelectElement>("#remision-pago")!.value as RemisionPayload["metodoPago"],
     observaciones: app.querySelector<HTMLInputElement>("#remision-observaciones")!.value || "",
+    bodega: remisionBodegaInput.value.trim().toUpperCase(),
     anulada: remisionAnuladaInput.checked,
     cliente: {
       nombre: app.querySelector<HTMLInputElement>("#cliente-nombre")!.value || "",
@@ -1290,11 +1311,19 @@ const buildRemisionPayload = (): RemisionPayload => {
   } as RemisionPayload;
 };
 
+remisionBodegaInput.addEventListener("input", () => {
+  normalizeUppercaseInput(remisionBodegaInput);
+});
+
 guardarRemisionBtn.addEventListener("click", async () => {
   const token = getToken();
   if (!token) {
     statusEl.textContent = "Debes iniciar sesión para guardar.";
     openLogin(goRemisiones);
+    return;
+  }
+  if (!validateWizardStep(3)) {
+    statusEl.textContent = "";
     return;
   }
   if (!editingRemisionNumero) {
@@ -1327,6 +1356,10 @@ app.querySelector("#generar")!.addEventListener("click", async () => {
   if (!token) {
     statusEl.textContent = "Debes iniciar sesión para generar remisiones.";
     openLogin();
+    return;
+  }
+  if (!validateWizardStep(3)) {
+    statusEl.textContent = "";
     return;
   }
   statusEl.textContent = "Generando PDF...";

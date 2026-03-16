@@ -13,6 +13,7 @@ const remisionSchema = z.object({
   usuario: z.string().optional(),
   metodoPago: z.enum(["efectivo", "nequi", "bancolombia"]),
   observaciones: z.string().optional(),
+  bodega: z.string().trim().min(1),
   anulada: z.boolean().optional(),
   cliente: z.object({
     tipoDocumento: z.string().optional(),

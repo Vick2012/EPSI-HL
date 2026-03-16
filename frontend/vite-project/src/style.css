@@ -1046,6 +1046,22 @@ body {
   margin-bottom: 16px;
 }
 
+.wizard-bodega-wrap {
+  display: flex;
+  justify-content: flex-start;
+  margin: 4px 0 8px;
+}
+
+.wizard-bodega-field {
+  width: min(360px, 100%);
+  text-align: left;
+  gap: 8px;
+}
+
+.wizard-bodega-field input {
+  width: 100%;
+}
+
 .wizard-generar {
   width: 100%;
   padding: 14px 20px;
@@ -1243,6 +1259,10 @@ select {
   border-radius: 8px;
   border: 1px solid #d0d5dd;
   font-size: 14px;
+}
+
+.uppercase-input {
+  text-transform: uppercase;
 }
 
 .password-field {
