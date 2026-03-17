@@ -39,4 +39,10 @@ describe("validateRemision", () => {
     const result = validateRemision({ ...validPayload, cliente: { ...validPayload.cliente, nombre: "" } });
     expect(result.ok).toBe(false);
   });
+
+  it("rechaza numero de remisión con patrón sospechoso", () => {
+    const result = validateRemision({ ...validPayload, numero: "' OR 1=1 --" });
+    expect(result.ok).toBe(false);
+    expect(result.errors.fieldErrors.numero).toBeDefined();
+  });
 });

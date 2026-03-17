@@ -11,5 +11,4 @@ function isValidPlatformEmail(value) {
 module.exports = {
   normalizePlatformEmail,
   isValidPlatformEmail,
-  PLATFORM_EMAIL_REGEX,
 };

@@ -547,27 +547,6 @@ body {
   }
 }
 
-.login-form-panel {
-  padding: 32px 28px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.login-form-panel h2 {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 700;
-  color: #1f3f83;
-  letter-spacing: -0.3px;
-}
-
-.login-subtitle {
-  margin: -8px 0 0 0;
-  font-size: 14px;
-  color: #64748b;
-}
-
 .login-input-wrap {
   position: relative;
 }
@@ -605,106 +584,6 @@ body {
   box-shadow: 0 2px 0 0 #f19a3e;
 }
 
-.login-form-panel .password-field {
-  display: flex;
-  align-items: center;
-  position: relative;
-}
-
-.login-form-panel .password-field .input-icon {
-  right: 48px;
-}
-
-.login-form-panel .password-field input {
-  padding-right: 80px;
-}
-
-.login-form-panel .icon-button {
-  position: absolute;
-  right: 4px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: transparent;
-  border: none;
-  padding: 8px;
-  cursor: pointer;
-  font-size: 16px;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-}
-
-.login-form-panel .icon-button:hover,
-.login-form-panel .input-icon-btn:hover {
-  opacity: 1;
-}
-
-.login-form-panel .input-icon-btn {
-  position: absolute;
-  right: 4px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: transparent;
-  border: none;
-  padding: 8px;
-  cursor: pointer;
-  font-size: 16px;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-}
-
-.login-btn-primary {
-  width: 100%;
-  padding: 14px 20px;
-  font-size: 16px;
-  font-weight: 700;
-  border: none;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #f19a3e 0%, #e0892f 100%);
-  color: #0f0f0f;
-  cursor: pointer;
-  box-shadow: 0 4px 14px rgba(241, 154, 62, 0.4);
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.login-btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(241, 154, 62, 0.5);
-}
-
-.login-btn-ghost {
-  margin-top: 8px;
-  padding: 10px 16px;
-  font-size: 14px;
-  font-weight: 600;
-  border: 1px solid #d0d5dd;
-  border-radius: 8px;
-  background: transparent;
-  color: #64748b;
-  cursor: pointer;
-  transition: border-color 0.2s, color 0.2s;
-}
-
-.login-btn-ghost:hover {
-  border-color: #1f3f83;
-  color: #1f3f83;
-}
-
-.login-form-panel .login-link {
-  background: none;
-  border: none;
-  color: #1f3f83;
-  font-weight: 600;
-  font-size: 13px;
-  cursor: pointer;
-  padding: 0;
-  transition: color 0.2s;
-}
-
-.login-form-panel .login-link:hover {
-  color: #f19a3e;
-  text-decoration: none;
-}
-
 .login-actions {
   display: flex;
   gap: 12px;
@@ -736,64 +615,6 @@ body {
   background: rgba(31, 63, 131, 0.08);
 }
 
-.login-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 4px;
-}
-
-.login-form-panel .login-link,
-.login-form-panel .link {
-  background: none;
-  border: none;
-  color: #1f3f83;
-  font-weight: 600;
-  font-size: 13px;
-  cursor: pointer;
-  padding: 0;
-  transition: color 0.2s;
-}
-
-.login-form-panel .login-link:hover,
-.login-form-panel .link:hover {
-  color: #f19a3e;
-  text-decoration: none;
-}
-
-.login-welcome-panel {
-  background: linear-gradient(160deg, #1f3f83 0%, #2d4a9e 50%, #f19a3e 100%);
-  padding: 32px 28px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.login-welcome-panel .welcome-content {
-  color: #ffffff;
-}
-
-.login-welcome-panel h3 {
-  margin: 0 0 8px 0;
-  font-size: 24px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-}
-
-.login-welcome-panel .welcome-brand {
-  font-size: 18px;
-  font-weight: 600;
-  opacity: 0.95;
-  margin-bottom: 12px;
-}
-
-.login-welcome-panel p {
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.6;
-  opacity: 0.9;
-}
-
 #login-error {
   font-size: 13px;
   color: #6b1319;
@@ -804,28 +625,6 @@ body {
 }
 
 /* Reset modal - mismo estilo */
-.reset-form-panel {
-  padding: 32px 28px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.reset-form-panel h2 {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 700;
-  color: #1f3f83;
-}
-
-.reset-form-panel .login-input-wrap input {
-  padding-right: 12px;
-}
-
-.reset-form-panel .password-field .login-input-wrap input {
-  padding-right: 80px;
-}
-
 /* Responsive login */
 @media (max-width: 640px) {
   .login-card {
@@ -834,37 +633,9 @@ body {
     max-width: 90vw;
   }
 
-  .login-welcome-panel {
-    display: none;
-  }
-
-  .login-form-panel {
-    padding: 24px 20px;
-  }
 }
 
 /* Buttons */
-.ghost {
-  border: 1px solid #d0d5dd;
-  background: #ffffff;
-  color: #344054;
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.ghost:hover {
-  border-color: #f19a3e;
-  color: #c56f1f;
-}
-
-.ghost:disabled {
-  cursor: default;
-  opacity: 0.5;
-}
-
-
 .brand {
   display: flex;
   flex-direction: column;
@@ -1478,18 +1249,6 @@ select {
   gap: 6px;
 }
 
-.user-list {
-  display: grid;
-  gap: 8px;
-}
-
-.user-row {
-  background: #f9fafb;
-  border: 1px solid #e4e7ec;
-  border-radius: 8px;
-  padding: 10px 12px;
-}
-
 .home {
   display: grid;
   gap: 28px;
@@ -1819,17 +1578,6 @@ select {
 
 .primary:hover {
   background: #183266;
-}
-
-.footer {
-  margin-top: auto;
-  color: #667085;
-  font-size: 13px;
-}
-
-.mono {
-  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
-  color: #1f3f83;
 }
 
 /* Botón de ayuda WhatsApp - UX: visible, accesible, no intrusivo */

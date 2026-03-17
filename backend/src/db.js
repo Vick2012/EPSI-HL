@@ -401,24 +401,8 @@ async function getDb() {
   return dbInstance;
 }
 
-async function closeDb() {
-  dbInstance = null;
-  initPromise = null;
-  if (sqliteInstance) {
-    const currentSqlite = sqliteInstance;
-    sqliteInstance = null;
-    await currentSqlite.close();
-  }
-  if (poolInstance) {
-    const currentPool = poolInstance;
-    poolInstance = null;
-    await currentPool.end();
-  }
-}
-
 module.exports = {
   getDb,
-  closeDb,
   getPoolConfig,
   createPgPool,
   runMigrations,

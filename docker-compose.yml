@@ -2,9 +2,9 @@ services:
   postgres:
     image: postgres:16
     environment:
-      POSTGRES_DB: epsi_hl
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${POSTGRES_DB:-epsi_hl}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
       - "5432:5432"
     volumes:
@@ -17,19 +17,42 @@ services:
       - postgres
     environment:
       PORT: 3001
-      NODE_ENV: production
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/epsi_hl
-      PGSSL: 0
-      JWT_SECRET: super-secret
-      ADMIN_DEFAULT_PASSWORD: Admin123!
-      CORS_ORIGINS: http://localhost:5173
-      TRUST_PROXY: 0
-      PDF_OUTPUT_DIR: /app/remisiones-pdf
-      CLIENTES_CSV_PATH: ""
-    ports:
-      - "3001:3001"
+      NODE_ENV: ${NODE_ENV:-production}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-epsi_hl}
+      PGSSL: ${PGSSL:-0}
+      JWT_SECRET: ${JWT_SECRET:-super-secret}
+      ADMIN_DEFAULT_PASSWORD: ${ADMIN_DEFAULT_PASSWORD:-Admin123!}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://127.0.0.1:8080}
+      TRUST_PROXY: ${TRUST_PROXY:-1}
+      PDF_OUTPUT_DIR: ${PDF_OUTPUT_DIR:-/app/remisiones-pdf}
+      CLIENTES_CSV_PATH: ${CLIENTES_CSV_PATH:-}
+    expose:
+      - "3001"
     volumes:
       - backend_pdfs:/app/remisiones-pdf
+
+  frontend:
+    build:
+      context: ./frontend/vite-project
+      args:
+        VITE_API_URL: ${VITE_API_URL:-/api}
+        VITE_ASSETS_URL: ${VITE_ASSETS_URL:-}
+        VITE_WHATSAPP_NUMBER: ${VITE_WHATSAPP_NUMBER:-}
+        VITE_WHATSAPP_MESSAGE: ${VITE_WHATSAPP_MESSAGE:-Hola, necesito ayuda con el Sistema IRIS}
+    depends_on:
+      - backend
+    expose:
+      - "80"
+
+  nginx:
+    image: nginx:1.28-alpine3.23-slim
+    depends_on:
+      - frontend
+      - backend
+    ports:
+      - "${PROXY_PORT:-8080}:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
 
 volumes:
   postgres_data:

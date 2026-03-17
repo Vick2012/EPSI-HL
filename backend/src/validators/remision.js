@@ -1,5 +1,11 @@
 const { z, flattenError } = require("zod");
 
+const safeLookupSchema = (label, max = 80) => z.string()
+  .trim()
+  .min(1, `${label} obligatorio`)
+  .max(max, `${label} demasiado largo`)
+  .regex(/^[A-Za-z0-9][A-Za-z0-9 ._/-]*$/, `${label} inválido`);
+
 const itemSchema = z.object({
   descripcion: z.string().min(1),
   cantidad: z.number().positive(),
@@ -8,7 +14,7 @@ const itemSchema = z.object({
 });
 
 const remisionSchema = z.object({
-  numero: z.string().min(1),
+  numero: safeLookupSchema("Número de remisión"),
   fecha: z.string().min(1),
   usuario: z.string().optional(),
   metodoPago: z.enum(["efectivo", "nequi", "bancolombia"]),
@@ -18,7 +24,7 @@ const remisionSchema = z.object({
   cliente: z.object({
     tipoDocumento: z.string().optional(),
     nombre: z.string().min(1),
-    nit: z.string().min(1),
+    nit: safeLookupSchema("NIT", 40),
     dv: z.string().optional(),
     direccion: z.string().min(1),
     ciudad: z.string().optional(),

@@ -1,6 +1,6 @@
 # EPSI HL - Sistema IRIS
 
-Sistema de gestión interna para EPSI HL. Plataforma web que centraliza remisiones en PDF, gestión de clientes, usuarios con roles y permisos, con autenticación JWT.
+Sistema web interno para EPSI HL. Centraliza remisiones en PDF, gestión de clientes, usuarios con roles y permisos, con autenticación JWT, despliegue con Docker Compose y acceso unificado detrás de `nginx` como reverse proxy.
 
 ---
 
@@ -34,12 +34,24 @@ Sistema de gestión interna para EPSI HL. Plataforma web que centraliza remision
 | **Vanilla JS** | — | DOM directo, sin framework |
 | **CSS** | — | Estilos propios, layout responsive |
 
+### Infraestructura / despliegue
+
+| Tecnología | Versión | Propósito |
+|------------|---------|-----------|
+| **Docker Compose** | v2+ | Orquestación local de servicios |
+| **Nginx** | 1.28 | Reverse proxy para frontend, API y assets |
+
 ---
 
 ## Estructura del proyecto
 
 ```
 EPSI HL/
+├── .env.example               # Variables para docker compose
+├── docker-compose.yml         # Stack local: postgres + backend + frontend + nginx
+├── nginx/
+│   └── default.conf           # Reverse proxy a frontend/backend
+│
 ├── backend/
 │   ├── src/
 │   │   ├── index.js           # Punto de entrada, Express app
@@ -51,11 +63,15 @@ EPSI HL/
 │   │   │   └── users.js       # CRUD usuarios, roles, reset password
 │   │   ├── services/
 │   │   │   └── pdfRemision.js # Generación PDF con plantilla EPSI HL
+│   │   ├── utils/
+│   │   │   ├── input-guards.js   # Validaciones defensivas de parámetros
+│   │   │   └── platform-email.js # Normalización/validación de emails EPSI HL
 │   │   └── validators/
 │   │       ├── cliente.js     # Esquema Zod para clientes
 │   │       ├── remision.js    # Esquemas Zod para remisiones
 │   │       └── users.js       # Esquemas Zod para usuarios
 │   ├── test/                  # Tests Vitest
+│   │   ├── utils/
 │   │   └── validators/
 │   ├── scripts/
 │   │   ├── migrate-postgres.cjs           # Ejecuta migraciones SQL en PostgreSQL
@@ -64,7 +80,10 @@ EPSI HL/
 │   ├── assets/                # Logos e imágenes para PDF
 │   ├── data/                  # Respaldo histórico y origen de migración SQLite
 │   ├── migrations/            # Esquema versionado PostgreSQL
+│   ├── .dockerignore
 │   ├── .env                   # Variables de entorno (no versionado)
+│   ├── .env.example
+│   ├── Dockerfile
 │   └── package.json
 │
 ├── frontend/
@@ -83,7 +102,11 @@ EPSI HL/
 │       │   └── utils/
 │       │       └── format.ts  # formatCurrency, calcularDv
 │       ├── public/            # Assets estáticos (logos, iconos)
+│       ├── .dockerignore
+│       ├── .env.example
+│       ├── Dockerfile
 │       ├── index.html
+│       ├── nginx.conf         # Nginx para servir la SPA
 │       └── package.json
 │
 └── docs/
@@ -121,6 +144,7 @@ EPSI HL/
 
 - Node.js 18+ (LTS recomendado)
 - npm
+- Docker Desktop / Docker Engine + Compose v2 (opcional, recomendado para la stack completa)
 
 ### 1. Instalar dependencias
 
@@ -131,7 +155,9 @@ cd frontend/vite-project && npm install && cd ../..
 
 ### 2. Configurar entorno
 
-En `backend/` crear `.env`:
+#### Desarrollo local
+
+En `backend/` crear `.env` a partir de `backend/.env.example`:
 
 ```env
 PORT=3001
@@ -142,7 +168,39 @@ ADMIN_DEFAULT_PASSWORD=Admin123!
 CORS_ORIGINS=http://localhost:5173
 ```
 
-### 3. Preparar PostgreSQL
+En `frontend/vite-project/` crear `.env` a partir de `frontend/vite-project/.env.example`:
+
+```env
+VITE_API_URL=http://localhost:3001
+VITE_ASSETS_URL=http://localhost:3001
+VITE_WHATSAPP_NUMBER=
+VITE_WHATSAPP_MESSAGE=Hola, necesito ayuda con el Sistema IRIS
+```
+
+#### Docker Compose
+
+En la raíz del proyecto puedes crear `.env` a partir de `.env.example`.
+
+Ese archivo controla las variables usadas por `docker compose`, por ejemplo:
+
+```env
+POSTGRES_DB=epsi_hl
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+PROXY_PORT=8080
+JWT_SECRET=tu-clave-secreta-segura
+VITE_API_URL=/api
+VITE_ASSETS_URL=
+VITE_WHATSAPP_NUMBER=
+```
+
+Notas:
+
+- En Docker, el frontend consume la API vía `nginx` con `VITE_API_URL=/api`.
+- En desarrollo local, el frontend apunta directamente al backend con `http://localhost:3001`.
+- El acceso público a la app en Docker es solo a través de `nginx`.
+
+### 3. Preparar base de datos y stack
 
 Con el `docker-compose.yml` local:
 
@@ -151,6 +209,22 @@ docker compose up -d postgres
 cd backend && npm run db:migrate
 ```
 
+Si prefieres levantar todo con contenedores:
+
+```bash
+cp .env.example .env
+docker compose up -d --build
+```
+
+Esto arranca:
+
+- `postgres` en `http://localhost:5432`
+- `nginx` en `http://localhost:8080`
+- `frontend` detrás de `nginx` en `/`
+- `backend` detrás de `nginx` en `/api`
+- assets del backend detrás de `nginx` en `/assets`
+- healthcheck del backend detrás de `nginx` en `/health`
+
 Si necesitas trasladar datos existentes desde `backend/data/iris.db`:
 
 ```bash
@@ -158,6 +232,20 @@ cd backend && npm run db:migrate:sqlite
 ```
 
 ### 4. Ejecutar
+
+#### Opción A: Todo con Docker
+
+**Terminal 1 – Stack completa:**
+```bash
+cp .env.example .env
+docker compose up -d --build
+```
+
+- **App:** http://localhost:8080
+- **API vía proxy:** http://localhost:8080/api
+- **Health vía proxy:** http://localhost:8080/health
+
+#### Opción B: Desarrollo local
 
 **Terminal 1 – API:**
 ```bash
@@ -178,6 +266,12 @@ npm run dev
 
 - **Usuario:** `admin` o `admin@epsihl.com`
 - **Contraseña:** `Admin123!` (o `ADMIN_DEFAULT_PASSWORD` en `.env`)
+
+Importante:
+
+- Cambia `JWT_SECRET` y `ADMIN_DEFAULT_PASSWORD` antes de usar el sistema fuera de desarrollo local.
+- No subas archivos `.env` al repositorio.
+- `node_modules` y `.env` ya están excluidos por `.gitignore`.
 
 ---
 
@@ -224,13 +318,32 @@ Antes de ejecutar `sonar-scanner`, ejecutar `npm run test:coverage` para generar
 | `PGSSL` | Activa SSL para PostgreSQL | `0` o `1` |
 | `JWT_SECRET` | Clave para firmar tokens | Obligatorio en producción |
 | `ADMIN_DEFAULT_PASSWORD` | Contraseña del admin por defecto | `Admin123!` |
-| `CORS_ORIGINS` | Orígenes permitidos (comma-separated) | `http://localhost:5173` |
+| `CORS_ORIGINS` | Orígenes permitidos (comma-separated) | `http://localhost:8080,http://127.0.0.1:8080` |
 | `TRUST_PROXY` | Activar si hay proxy inverso | `1` |
 | `PDF_OUTPUT_DIR` | Carpeta para guardar PDFs | Ruta absoluta |
 | `SQLITE_DB_PATH` | Ruta del SQLite origen para migración | `backend/data/iris.db` |
 | `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` | Configuración SMTP (recuperación contraseña) | — |
 | `LOGIN_RATE_WINDOW_MS` | Ventana para rate limit (ms) | `900000` |
 | `LOGIN_RATE_MAX` | Intentos máximos por ventana | `10` |
+
+---
+
+## Variables de entorno (Docker Compose)
+
+| Variable | Descripción | Ejemplo |
+|----------|-------------|---------|
+| `POSTGRES_DB` | Nombre de la base de datos | `epsi_hl` |
+| `POSTGRES_USER` | Usuario PostgreSQL | `postgres` |
+| `POSTGRES_PASSWORD` | Contraseña PostgreSQL | `postgres` |
+| `PROXY_PORT` | Puerto público de `nginx` | `8080` |
+| `NODE_ENV` | Entorno del backend | `production` |
+| `JWT_SECRET` | Secreto JWT para la API | `cambia-esto` |
+| `ADMIN_DEFAULT_PASSWORD` | Clave inicial del admin | `cambia-esto` |
+| `CORS_ORIGINS` | Orígenes permitidos por la API | `http://localhost:8080` |
+| `VITE_API_URL` | Base API embebida en el build del frontend | `/api` |
+| `VITE_ASSETS_URL` | Base para assets del backend | vacío o `/assets` |
+| `VITE_WHATSAPP_NUMBER` | Número de soporte WhatsApp | `573001234567` |
+| `VITE_WHATSAPP_MESSAGE` | Mensaje por defecto de soporte | `Hola, necesito ayuda...` |
 
 ---
 
@@ -255,6 +368,12 @@ Antes de ejecutar `sonar-scanner`, ejecutar `npm run test:coverage` para generar
 | `GET` | `/remisiones/:numero` | Consultar remisión (GERENCIAL) |
 | `GET` | `/remisiones/:numero/pdf` | Descargar PDF (GERENCIAL) |
 | `PUT` | `/remisiones/:numero` | Editar remisión (GERENCIAL) |
+
+Si accedes mediante Docker + `nginx`, estas rutas quedan publicadas bajo `/api`, por ejemplo:
+
+- `POST /api/auth/login`
+- `GET /api/health`
+- `GET /api/remisiones/siguiente-numero`
 
 ---
 

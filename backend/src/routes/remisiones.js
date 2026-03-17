@@ -5,6 +5,7 @@ const { authMiddleware } = require("./auth");
 const { getDb } = require("../db");
 const path = require("node:path");
 const fs = require("node:fs");
+const { validateLookupKey } = require("../utils/input-guards");
 
 const router = express.Router();
 const PDF_OUTPUT_DIR =
@@ -92,9 +93,12 @@ router.get("/:numero", authMiddleware, async (req, res) => {
   if (req.user?.role !== "GERENCIAL") {
     return res.status(403).json({ ok: false, message: "Solo GERENCIAL puede consultar." });
   }
-  const { numero } = req.params;
+  const numeroResult = validateLookupKey(req.params.numero, "Número de remisión");
+  if (!numeroResult.ok) {
+    return res.status(400).json({ ok: false, message: numeroResult.message });
+  }
   const db = await getDb();
-  const record = await db.get("SELECT data_json FROM remisiones WHERE numero = $1", numero);
+  const record = await db.get("SELECT data_json FROM remisiones WHERE numero = $1", numeroResult.value);
   if (!record) {
     return res.status(404).json({ ok: false, message: "Remisión no encontrada." });
   }
@@ -111,9 +115,12 @@ router.get("/:numero/pdf", authMiddleware, async (req, res) => {
   if (req.user?.role !== "GERENCIAL") {
     return res.status(403).json({ ok: false, message: "Solo GERENCIAL puede generar PDF." });
   }
-  const { numero } = req.params;
+  const numeroResult = validateLookupKey(req.params.numero, "Número de remisión");
+  if (!numeroResult.ok) {
+    return res.status(400).json({ ok: false, message: numeroResult.message });
+  }
   const db = await getDb();
-  const record = await db.get("SELECT data_json FROM remisiones WHERE numero = $1", numero);
+  const record = await db.get("SELECT data_json FROM remisiones WHERE numero = $1", numeroResult.value);
   if (!record) {
     return res.status(404).json({ ok: false, message: "Remisión no encontrada." });
   }
@@ -139,7 +146,11 @@ router.put("/:numero", authMiddleware, async (req, res) => {
   if (req.user?.role !== "GERENCIAL") {
     return res.status(403).json({ ok: false, message: "Solo GERENCIAL puede editar." });
   }
-  const { numero } = req.params;
+  const numeroResult = validateLookupKey(req.params.numero, "Número de remisión");
+  if (!numeroResult.ok) {
+    return res.status(400).json({ ok: false, message: numeroResult.message });
+  }
+  const { value: numero } = numeroResult;
   const parse = validateRemision(req.body);
   if (!parse.ok) {
     return res.status(400).json({ ok: false, errors: parse.errors });

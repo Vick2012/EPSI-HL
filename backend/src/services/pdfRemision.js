@@ -349,7 +349,7 @@ function drawItems(doc, remision) {
   });
 }
 
-function drawPagoFirma(doc, remision, logoPath) {
+function drawPagoFirma(doc, remision) {
   const left = MARGIN;
   const top = 430;
 
@@ -490,7 +490,7 @@ async function generateRemisionPdf(remision) {
         drawHeader(doc, remision, headerLogo);
         drawCliente(doc, remision);
         drawItems(doc, remision);
-        drawPagoFirma(doc, remision, headerLogo);
+        drawPagoFirma(doc, remision);
         drawTotales(doc, remision);
         drawFooter(doc, remision);
         if (remision.anulada) {

@@ -3,6 +3,7 @@ const xlsx = require("xlsx");
 const { getDb } = require("../db");
 const { authMiddleware } = require("./auth");
 const { validateCliente } = require("../validators/cliente");
+const { validateLookupKey } = require("../utils/input-guards");
 
 const router = express.Router();
 
@@ -41,9 +42,12 @@ const handleExport = async (req, res) => {
 router.get("/exportar", authMiddleware, handleExport);
 
 router.get("/:numero", authMiddleware, async (req, res) => {
-  const { numero } = req.params;
+  const numeroResult = validateLookupKey(req.params.numero, "Número de documento");
+  if (!numeroResult.ok) {
+    return res.status(400).json({ ok: false, message: numeroResult.message });
+  }
   const db = await getDb();
-  const cliente = await db.get("SELECT * FROM clientes WHERE numero_documento = $1", numero);
+  const cliente = await db.get("SELECT * FROM clientes WHERE numero_documento = $1", numeroResult.value);
   if (!cliente) {
     return res.status(404).json({ ok: false, message: "Cliente no encontrado." });
   }

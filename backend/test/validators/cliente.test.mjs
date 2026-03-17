@@ -44,4 +44,10 @@ describe("validateCliente", () => {
     expect(result.ok).toBe(false);
     expect(result.errors.fieldErrors.direccion).toBeDefined();
   });
+
+  it("rechaza numero_documento con patrón sospechoso", () => {
+    const result = validateCliente({ ...validPayload, numero_documento: "123'; DROP TABLE clientes; --" });
+    expect(result.ok).toBe(false);
+    expect(result.errors.fieldErrors.numero_documento).toBeDefined();
+  });
 });

@@ -1,7 +1,11 @@
-export const API_BASE =
-  import.meta.env.VITE_API_URL || `${globalThis.location.protocol}//${globalThis.location.hostname}:3001`;
+const envValueOrUndefined = (value: string | undefined): string | undefined =>
+  value === undefined ? undefined : value;
 
-export const ASSETS_BASE = import.meta.env.VITE_ASSETS_URL || API_BASE;
+export const API_BASE =
+  envValueOrUndefined(import.meta.env.VITE_API_URL)
+  ?? `${globalThis.location.protocol}//${globalThis.location.hostname}:3001`;
+
+export const ASSETS_BASE = envValueOrUndefined(import.meta.env.VITE_ASSETS_URL) ?? API_BASE;
 
 /** Número WhatsApp para soporte (formato: 573058138022, sin + ni espacios). Definir en .env */
 const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER ?? "";

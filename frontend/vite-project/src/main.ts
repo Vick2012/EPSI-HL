@@ -1118,13 +1118,11 @@ backButton.addEventListener("click", () => {
 
 const recalc = () => {
   const itemRows = Array.from(app.querySelectorAll<HTMLDivElement>(".items-row"));
-  let itemsSubtotal = 0;
   itemRows.forEach((row) => {
     const cantidad = Number(row.querySelector<HTMLInputElement>(".item-cantidad")!.value || 0);
     const unitario = Number(row.querySelector<HTMLInputElement>(".item-unitario")!.value || 0);
     const rowSubtotal = cantidad * unitario;
     row.querySelector<HTMLInputElement>(".item-subtotal")!.value = String(rowSubtotal);
-    itemsSubtotal += rowSubtotal;
   });
 
   const totalInput = Number(app.querySelector<HTMLInputElement>("#remision-total")!.value || 0);

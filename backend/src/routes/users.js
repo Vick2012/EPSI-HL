@@ -4,6 +4,7 @@ const crypto = require("node:crypto");
 const { getDb } = require("../db");
 const { authMiddleware, requireAnyRole } = require("./auth");
 const { validateUserCreate, validateUserUpdate } = require("../validators/users");
+const { validatePositiveIntegerId } = require("../utils/input-guards");
 
 const router = express.Router();
 
@@ -52,7 +53,11 @@ router.post("/", authMiddleware, requireAnyRole(USER_MANAGEMENT_ROLES), async (r
 });
 
 router.put("/:id", authMiddleware, requireAnyRole(USER_MANAGEMENT_ROLES), async (req, res) => {
-  const { id } = req.params;
+  const idResult = validatePositiveIntegerId(req.params.id, "ID de usuario");
+  if (!idResult.ok) {
+    return res.status(400).json({ ok: false, message: idResult.message });
+  }
+  const { value: id } = idResult;
   const parse = validateUserUpdate(req.body || {});
   if (!parse.ok) {
     return res.status(400).json({ ok: false, errors: parse.errors });
@@ -91,7 +96,11 @@ router.put("/:id", authMiddleware, requireAnyRole(USER_MANAGEMENT_ROLES), async 
 });
 
 router.delete("/:id", authMiddleware, requireAnyRole(USER_MANAGEMENT_ROLES), async (req, res) => {
-  const { id } = req.params;
+  const idResult = validatePositiveIntegerId(req.params.id, "ID de usuario");
+  if (!idResult.ok) {
+    return res.status(400).json({ ok: false, message: idResult.message });
+  }
+  const { value: id } = idResult;
   const db = await getDb();
   const user = await db.get("SELECT id FROM users WHERE id = $1", id);
   if (!user) {
@@ -102,7 +111,11 @@ router.delete("/:id", authMiddleware, requireAnyRole(USER_MANAGEMENT_ROLES), asy
 });
 
 router.post("/:id/reset", authMiddleware, requireAnyRole(USER_MANAGEMENT_ROLES), async (req, res) => {
-  const { id } = req.params;
+  const idResult = validatePositiveIntegerId(req.params.id, "ID de usuario");
+  if (!idResult.ok) {
+    return res.status(400).json({ ok: false, message: idResult.message });
+  }
+  const { value: id } = idResult;
   const db = await getDb();
   const user = await db.get("SELECT id, email FROM users WHERE id = $1", id);
   if (!user) {
