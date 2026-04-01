@@ -14,19 +14,6 @@ const PDF_OUTPUT_DIR =
 router.get("/siguiente-numero", authMiddleware, async (req, res) => {
   try {
     const db = await getDb();
-    if (db.dialect === "sqlite") {
-      const rows = await db.all("SELECT numero FROM remisiones");
-      let maxNum = 0;
-      const numRe = /(\d+)/; // NOSONAR - RegExp.exec usado
-      for (const row of rows) {
-        const match = numRe.exec(String(row.numero || ""));
-        if (match) {
-          const n = Number.parseInt(match[1], 10);
-          if (n > maxNum) maxNum = n;
-        }
-      }
-      return res.json({ ok: true, siguiente: maxNum + 1 });
-    }
     const row = await db.get(`
       SELECT COALESCE(
         MAX(NULLIF(regexp_replace(numero, '\\D', '', 'g'), '')::integer),
@@ -74,14 +61,9 @@ router.post("/", authMiddleware, async (req, res) => {
       now
     );
     const pdfBuffer = await generateRemisionPdf(data);
-    if (!fs.existsSync(PDF_OUTPUT_DIR)) {
-      fs.mkdirSync(PDF_OUTPUT_DIR, { recursive: true });
-    }
     const safeNumero = String(data.numero).replaceAll(/[^\w-]+/g, "_"); // NOSONAR
-    const pdfPath = path.join(PDF_OUTPUT_DIR, `Remision_${safeNumero}.pdf`);
-    fs.writeFileSync(pdfPath, pdfBuffer);
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", "inline; filename=remision.pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="Remision_${safeNumero}.pdf"`);
     return res.send(pdfBuffer);
   } catch (_err) { // NOSONAR - Excepción manejada con console.error
     console.error("POST remisiones PDF:", _err);
@@ -127,14 +109,9 @@ router.get("/:numero/pdf", authMiddleware, async (req, res) => {
   try {
     const data = typeof record.data_json === "string" ? JSON.parse(record.data_json) : record.data_json;
     const pdfBuffer = await generateRemisionPdf(data);
-    if (!fs.existsSync(PDF_OUTPUT_DIR)) {
-      fs.mkdirSync(PDF_OUTPUT_DIR, { recursive: true });
-    }
     const safeNumero = String(data.numero).replaceAll(/[^\w-]+/g, "_"); // NOSONAR
-    const pdfPath = path.join(PDF_OUTPUT_DIR, `Remision_${safeNumero}.pdf`);
-    fs.writeFileSync(pdfPath, pdfBuffer);
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", "inline; filename=remision.pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="Remision_${safeNumero}.pdf"`);
     return res.send(pdfBuffer);
   } catch (_err) { // NOSONAR - Excepción manejada con console.error
     console.error("GET remision PDF:", _err);

@@ -8,6 +8,7 @@ const remisionesRouter = require("./routes/remisiones");
 const { authRouter } = require("./routes/auth");
 const usersRouter = require("./routes/users");
 const clientesRouter = require("./routes/clientes");
+const { createPgPool, runMigrations } = require("./db");
 
 const app = express();
 
@@ -69,6 +70,17 @@ app.use((err, _req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", async () => {
   console.log(`API running on http://localhost:${PORT}`);
+  const pool = createPgPool();
+  try {
+    await pool.query("SELECT 1");
+    await runMigrations(pool);
+    console.log("PostgreSQL schema ready.");
+  } catch (err) {
+    console.error("Startup migration failed:", err);
+    process.exit(1);
+  } finally {
+    await pool.end();
+  }
 });

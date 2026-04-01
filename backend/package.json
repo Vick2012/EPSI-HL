@@ -7,7 +7,6 @@
     "dev": "node src/index.js",
     "start": "node src/index.js",
     "db:migrate": "node scripts/migrate-postgres.cjs",
-    "db:migrate:sqlite": "node scripts/migrate-sqlite-to-postgres.cjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage && node scripts/generate-lcov.cjs"
@@ -28,8 +27,6 @@
     "pdfkit": "^0.17.2",
     "pg": "^8.20.0",
     "sharp": "^0.34.5",
-    "sqlite": "^5.1.1",
-    "sqlite3": "^5.1.7",
     "xlsx": "^0.18.5",
     "zod": "^4.3.6"
   },
