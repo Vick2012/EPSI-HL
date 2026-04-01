@@ -11,6 +11,12 @@ const router = express.Router();
 const PDF_OUTPUT_DIR =
   process.env.PDF_OUTPUT_DIR || path.join(process.cwd(), "remisiones-pdf");
 
+function buildPdfFilename(numero) {
+  const normalizedNumero = String(numero).replace(/^RM[\s_-]*/i, "").trim();
+  const safeNumero = normalizedNumero.replaceAll(/[^\w-]+/g, "_") || "000";
+  return `Remisiones_RM_${safeNumero}.pdf`;
+}
+
 router.get("/siguiente-numero", authMiddleware, async (req, res) => {
   try {
     const db = await getDb();
@@ -61,9 +67,8 @@ router.post("/", authMiddleware, async (req, res) => {
       now
     );
     const pdfBuffer = await generateRemisionPdf(data);
-    const safeNumero = String(data.numero).replaceAll(/[^\w-]+/g, "_"); // NOSONAR
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="Remision_${safeNumero}.pdf"`);
+    res.setHeader("Content-Disposition", `attachment; filename="${buildPdfFilename(data.numero)}"`);
     return res.send(pdfBuffer);
   } catch (_err) { // NOSONAR - Excepción manejada con console.error
     console.error("POST remisiones PDF:", _err);
@@ -109,9 +114,8 @@ router.get("/:numero/pdf", authMiddleware, async (req, res) => {
   try {
     const data = typeof record.data_json === "string" ? JSON.parse(record.data_json) : record.data_json;
     const pdfBuffer = await generateRemisionPdf(data);
-    const safeNumero = String(data.numero).replaceAll(/[^\w-]+/g, "_"); // NOSONAR
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="Remision_${safeNumero}.pdf"`);
+    res.setHeader("Content-Disposition", `attachment; filename="${buildPdfFilename(data.numero)}"`);
     return res.send(pdfBuffer);
   } catch (_err) { // NOSONAR - Excepción manejada con console.error
     console.error("GET remision PDF:", _err);

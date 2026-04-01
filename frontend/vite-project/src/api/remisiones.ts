@@ -59,7 +59,7 @@ export async function generarRemisionPdf(payload: RemisionPayload) {
     throw new Error(text || "Error generando PDF");
   }
 
-  return response.blob();
+  return response;
 }
 
 export async function fetchRemision(numero: string, token: string) {

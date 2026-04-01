@@ -956,6 +956,13 @@ body {
   width: fit-content;
 }
 
+.secondary:disabled {
+  background: #f8fafc;
+  border-color: #d0d5dd;
+  color: #98a2b3;
+  cursor: not-allowed;
+}
+
 .user-cta {
   background: #f19a3e;
   color: #0f0f0f;
@@ -1108,8 +1115,13 @@ select {
 .client-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   margin-top: 8px;
+}
+
+.client-actions .status {
+  flex: 1 1 220px;
 }
 
 .table {

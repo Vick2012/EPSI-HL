@@ -43,6 +43,44 @@ import { calcularDv, formatCurrency } from "./utils/format";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 
+const getPdfFilename = (response: Response, fallbackNumero?: string) => {
+  const disposition = response.headers.get("Content-Disposition") || "";
+  const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) {
+    return decodeURIComponent(utf8Match[1]);
+  }
+
+  const simpleMatch = disposition.match(/filename="([^"]+)"/i) || disposition.match(/filename=([^;]+)/i);
+  if (simpleMatch?.[1]) {
+    return simpleMatch[1].trim().replace(/^"|"$/g, "");
+  }
+
+  const cleanNumero = String(fallbackNumero || "000").replace(/^RM[\s_-]*/i, "").trim().replaceAll(/[^\w-]+/g, "_") || "000";
+  return `Remisiones_RM_${cleanNumero}.pdf`;
+};
+
+const downloadPdfBlob = async (blob: Blob, filename: string) => {
+  const file = new File([blob], filename, { type: blob.type || "application/pdf" });
+  if ("canShare" in navigator && navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: filename });
+      return;
+    } catch {
+      // Si el usuario cancela o el navegador falla, usamos descarga tradicional.
+    }
+  }
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.rel = "noopener";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  globalThis.setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+
 app.innerHTML = `
   <!-- Página de login - Sistema IRIS (card centrada, imagen de colaboradores visible) -->
   <div id="login-page" class="login-page">
@@ -329,8 +367,8 @@ app.innerHTML = `
                 </div>
                 <div class="client-actions">
                   <button id="guardar-cliente" class="secondary">Guardar cliente</button>
-                  <button id="exportar-clientes" class="secondary hidden" type="button">
-                    Exportar base de datos de cliente
+                  <button id="exportar-clientes" class="secondary" type="button">
+                    Descargar base de datos de clientes
                   </button>
                   <span id="cliente-status" class="status"></span>
                 </div>
@@ -684,7 +722,9 @@ const applyRole = (role: string | null) => {
   remisionNumeroInput.readOnly = !isGerencial || isEditing;
   remisionAnuladaWrap.classList.toggle("hidden", !isGerencial);
   buscarRemisionSection.classList.toggle("hidden", !isGerencial);
-  exportarClientesBtn.classList.toggle("hidden", !isGerencial);
+  exportarClientesBtn.classList.remove("hidden");
+  exportarClientesBtn.disabled = !isGerencial;
+  exportarClientesBtn.title = isGerencial ? "" : "Disponible solo para el rol GERENCIAL";
   guardarRemisionBtn.classList.toggle("hidden", !isGerencial || !isEditing);
   cancelarEdicionRemisionBtn.classList.toggle("hidden", !isGerencial || !isEditing);
   if (!isGerencial) {
@@ -1340,8 +1380,8 @@ guardarRemisionBtn.addEventListener("click", async () => {
     const pdfResponse = await fetchRemisionPdf(editingRemisionNumero, token);
     if (pdfResponse.ok) {
       const pdf = await pdfResponse.blob();
-      const url = URL.createObjectURL(pdf);
-      globalThis.open(url, "_blank");
+      const filename = getPdfFilename(pdfResponse, editingRemisionNumero);
+      await downloadPdfBlob(pdf, filename);
     }
     statusEl.textContent = "Remisión actualizada.";
   } catch {
@@ -1364,9 +1404,10 @@ app.querySelector("#generar")!.addEventListener("click", async () => {
   const payload = buildRemisionPayload();
 
   try {
-    const pdf = await generarRemisionPdf(payload);
-    const url = URL.createObjectURL(pdf);
-    globalThis.open(url, "_blank");
+    const response = await generarRemisionPdf(payload);
+    const pdf = await response.blob();
+    const filename = getPdfFilename(response, payload.numero);
+    await downloadPdfBlob(pdf, filename);
     statusEl.textContent = "PDF generado.";
     await cargarConsecutivo();
   } catch (error) {
