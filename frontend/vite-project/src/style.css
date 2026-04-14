@@ -1641,19 +1641,42 @@ select {
   white-space: nowrap;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 768px) {
+  .main {
+    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  }
+
   .help-whatsapp {
-    bottom: 16px;
-    right: 16px;
-    padding: 10px 14px;
-    font-size: 13px;
+    right: 14px;
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    border-radius: 50%;
+    justify-content: center;
+    gap: 0;
   }
 
   .help-whatsapp-label {
     display: none;
   }
+}
+
+@media (max-width: 480px) {
+  .help-whatsapp {
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    width: 52px;
+    height: 52px;
+    font-size: 13px;
+  }
 
   .help-whatsapp-icon {
     margin: 0;
+  }
+
+  .help-whatsapp-icon svg {
+    width: 22px;
+    height: 22px;
   }
 }

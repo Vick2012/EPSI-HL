@@ -14,7 +14,7 @@ const PDF_OUTPUT_DIR =
 function buildPdfFilename(numero) {
   const normalizedNumero = String(numero).replace(/^RM[\s_-]*/i, "").trim();
   const safeNumero = normalizedNumero.replaceAll(/[^\w-]+/g, "_") || "000";
-  return `Remisiones_RM_${safeNumero}.pdf`;
+  return `Remision_RM_${safeNumero}.pdf`;
 }
 
 router.get("/siguiente-numero", authMiddleware, async (req, res) => {

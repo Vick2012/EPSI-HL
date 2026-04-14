@@ -56,7 +56,7 @@ const getPdfFilename = (response: Response, fallbackNumero?: string) => {
   }
 
   const cleanNumero = String(fallbackNumero || "000").replace(/^RM[\s_-]*/i, "").trim().replaceAll(/[^\w-]+/g, "_") || "000";
-  return `Remisiones_RM_${cleanNumero}.pdf`;
+  return `Remision_RM_${cleanNumero}.pdf`;
 };
 
 const downloadPdfBlob = async (blob: Blob, filename: string) => {
