@@ -615,7 +615,13 @@ const resetStatus = app.querySelector<HTMLDivElement>("#reset-status")!;
 const resetRequest = app.querySelector<HTMLButtonElement>("#reset-request")!;
 const resetApply = app.querySelector<HTMLButtonElement>("#reset-apply")!;
 const resetCancel = app.querySelector<HTMLButtonElement>("#reset-cancel")!;
+const helpWhatsAppEl = app.querySelector<HTMLAnchorElement>("#help-whatsapp");
 let pendingAction: null | (() => void) = null;
+
+const syncHelpWhatsAppPosition = (view: "login" | "home" | "remisiones" | "users") => {
+  if (!helpWhatsAppEl) return;
+  helpWhatsAppEl.classList.toggle("is-remision-active", view === "remisiones");
+};
 
 const logoImg = app.querySelector<HTMLImageElement>("#brand-logo")!;
 const logoBase = ASSETS_BASE;
@@ -649,6 +655,7 @@ const goHome = () => {
   usersView.classList.add("hidden");
   backButton.disabled = false;
   setActiveNav("inicio");
+  syncHelpWhatsAppPosition("home");
 };
 
 /** Limpia el formulario de remisión al cambiar de usuario (evita que persistan datos del usuario anterior) */
@@ -683,6 +690,7 @@ const appContentEl = app.querySelector<HTMLDivElement>("#app-content")!;
 const showLoginPage = () => {
   loginPageEl.classList.remove("hidden");
   appContentEl.classList.add("hidden");
+  syncHelpWhatsAppPosition("login");
 };
 
 const showAppContent = () => {
@@ -1092,6 +1100,7 @@ const goRemisiones = async () => {
   usersView.classList.add("hidden");
   backButton.disabled = false;
   setActiveNav("remisiones");
+  syncHelpWhatsAppPosition("remisiones");
   await cargarConsecutivo();
   applyRole(getRole());
   goToWizardStep(1);
@@ -1113,6 +1122,7 @@ const goUsers = () => {
   usersView.classList.remove("hidden");
   backButton.disabled = false;
   setActiveNav("usuarios");
+  syncHelpWhatsAppPosition("users");
   loadUsers();
 };
 
@@ -1618,6 +1628,7 @@ updateFechaHora();
 setInterval(updateFechaHora, 60000);
 cargarConsecutivo();
 recalc();
+syncHelpWhatsAppPosition("home");
 
 const savedUser = getUserEmail();
 if (savedUser) {

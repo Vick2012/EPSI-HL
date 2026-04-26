@@ -27,7 +27,7 @@ body {
 /* Layout */
 .page {
   display: grid;
-  grid-template-columns: 260px 1fr;
+  grid-template-columns: minmax(240px, 260px) minmax(0, 1fr);
   min-height: 100vh;
   background: linear-gradient(180deg, #f1f5f9 0%, #f7f8fb 50%, #e2e8f0 100%);
 }
@@ -132,6 +132,7 @@ body {
   flex-direction: column;
   padding: 24px;
   gap: 20px;
+  min-width: 0;
 }
 
 .header {
@@ -695,6 +696,7 @@ body {
 .content {
   display: grid;
   gap: 20px;
+  min-width: 0;
 }
 
 /* Wizard de remisiones */
@@ -729,6 +731,7 @@ body {
   font-size: 14px;
   color: #64748b;
   transition: all 0.2s ease;
+  min-width: 110px;
 }
 
 .wizard-step:hover:not(:disabled) {
@@ -874,11 +877,12 @@ body {
 .card {
   background: #ffffff;
   border-radius: 12px;
-  padding: 20px;
+  padding: clamp(14px, 2.2vw, 20px);
   box-shadow: 0 10px 20px rgba(16, 24, 40, 0.06);
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-width: 0;
 }
 
 .card h2 {
@@ -1081,6 +1085,9 @@ select {
 .items-table {
   display: grid;
   gap: 8px;
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .items-header {
@@ -1091,12 +1098,14 @@ select {
   font-weight: 600;
   gap: 10px;
   text-align: center;
+  min-width: 620px;
 }
 
 .items-row {
   display: grid;
   grid-template-columns: 100px 1fr 140px 140px;
   gap: 10px;
+  min-width: 620px;
 }
 
 .totals {
@@ -1127,6 +1136,8 @@ select {
 .table {
   display: grid;
   gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .users-subsection {
@@ -1176,6 +1187,7 @@ select {
   grid-template-columns: 1.2fr 1.2fr 0.8fr 0.8fr 0.8fr;
   gap: 10px;
   align-items: center;
+  min-width: 720px;
 }
 
 .actions {
@@ -1197,6 +1209,7 @@ select {
 .users-table-head,
 .users-table-row {
   grid-template-columns: minmax(140px, 1.1fr) minmax(180px, 1.2fr) minmax(130px, 0.8fr) minmax(100px, 0.7fr) minmax(230px, 1.2fr) minmax(220px, 1fr);
+  min-width: 1040px;
 }
 
 .users-table-row {
@@ -1510,6 +1523,83 @@ select {
   gap: 20px;
 }
 
+@media (max-width: 1200px) {
+  .main {
+    padding: 20px;
+  }
+
+  .hero {
+    padding: 30px 24px;
+    gap: 22px;
+  }
+
+  .users-table-head,
+  .users-table-row {
+    min-width: 960px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .page {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    padding: 14px 16px;
+    gap: 14px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  }
+
+  .sidebar .brand-row {
+    justify-content: flex-start;
+  }
+
+  .sidebar .brand-logo {
+    width: 58px;
+    height: 58px;
+  }
+
+  .nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .nav-item {
+    flex: 1 1 180px;
+    justify-content: center;
+    padding: 10px 12px;
+  }
+
+  .sidebar-footer {
+    margin-top: 0;
+  }
+
+  .header {
+    flex-wrap: wrap;
+    padding: 16px 18px;
+    gap: 14px;
+  }
+
+  .header-right {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .header-back-btn {
+    padding: 10px 14px;
+  }
+
+  .hero-stats {
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    max-width: 100%;
+  }
+}
+
 .module-card {
   background: #ffffff;
   border-radius: 18px;
@@ -1641,7 +1731,162 @@ select {
   white-space: nowrap;
 }
 
+.help-whatsapp.is-remision-active {
+  bottom: 108px;
+}
+
 @media (max-width: 768px) {
+  .main {
+    padding: 14px;
+    gap: 14px;
+    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .header {
+    border-left-width: 3px;
+    border-radius: 12px;
+    padding: 14px;
+  }
+
+  .header .page-title {
+    font-size: clamp(20px, 6.5vw, 26px);
+  }
+
+  .header-subtitle {
+    font-size: 13px;
+  }
+
+  .user-pill {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+
+  .nav-item {
+    flex: 1 1 calc(50% - 8px);
+    font-size: 13px;
+    gap: 8px;
+  }
+
+  .nav-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .quick-access-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+
+  .quick-access-btn {
+    padding: 12px;
+    gap: 8px;
+    font-size: 13px;
+  }
+
+  .hero {
+    grid-template-columns: 1fr;
+    padding: 22px 16px;
+    border-radius: 16px;
+  }
+
+  .hero-content h1 {
+    font-size: clamp(22px, 8vw, 30px);
+    margin-top: 10px;
+  }
+
+  .hero-content p {
+    font-size: 14px;
+  }
+
+  .hero-actions {
+    margin-top: 18px;
+    gap: 10px;
+  }
+
+  .hero-actions .primary,
+  .hero-actions .secondary {
+    width: 100%;
+    margin-top: 0;
+  }
+
+  .hero-card {
+    border-radius: 14px;
+    padding: 18px 14px;
+  }
+
+  .wizard-stepper {
+    justify-content: flex-start;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding: 12px;
+  }
+
+  .wizard-step {
+    min-width: 124px;
+    padding: 8px 10px;
+  }
+
+  .wizard-step-connector {
+    width: 18px;
+  }
+
+  .wizard-nav {
+    flex-wrap: wrap;
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .wizard-nav-error {
+    order: 3;
+    flex-basis: 100%;
+  }
+
+  .wizard-btn-prev,
+  .wizard-btn-next {
+    flex: 1;
+    margin-top: 0;
+  }
+
+  .users-subsection-header {
+    flex-wrap: wrap;
+  }
+
+  .client-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .client-actions .secondary,
+  .client-actions .primary {
+    width: 100%;
+    margin-top: 0;
+  }
+
+  .client-actions .status {
+    width: 100%;
+    text-align: left;
+    flex: 1 1 auto;
+  }
+
+  .login-header {
+    padding: 16px;
+  }
+
+  .login-header-brand {
+    margin-left: 0;
+    width: 100%;
+    padding: 16px;
+  }
+
+  .login-main {
+    align-items: center;
+    padding-top: max(24px, env(safe-area-inset-top, 0px));
+  }
+
+  .module-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
   .main {
     padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
   }
@@ -1660,9 +1905,94 @@ select {
   .help-whatsapp-label {
     display: none;
   }
+
+  .help-whatsapp.is-remision-active {
+    bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 @media (max-width: 480px) {
+  .sidebar {
+    padding: 12px;
+  }
+
+  .sidebar .logo {
+    font-size: 16px;
+  }
+
+  .sidebar .subtitle {
+    font-size: 12px;
+  }
+
+  .nav-item {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+    padding: 9px 10px;
+  }
+
+  .main {
+    padding: 10px;
+    gap: 12px;
+    padding-bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .header {
+    padding: 12px;
+  }
+
+  .header-right {
+    gap: 10px;
+  }
+
+  .header-back-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .env-pill {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+
+  .wizard-step {
+    min-width: 112px;
+  }
+
+  .login-page-card {
+    padding: 20px 14px;
+    border-radius: 12px;
+  }
+
+  .login-page-card .login-input-wrap input {
+    padding: 12px 40px 12px 12px;
+  }
+
+  .hero-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-stats div {
+    padding: 12px;
+  }
+
+  .table-head,
+  .table-row,
+  .users-table-head,
+  .users-table-row,
+  .items-header,
+  .items-row {
+    min-width: 560px;
+  }
+
+  .module-card {
+    padding: 16px;
+  }
+
+  .module-icon {
+    width: 60px;
+    height: 60px;
+  }
+
   .help-whatsapp {
     right: 12px;
     bottom: calc(12px + env(safe-area-inset-bottom, 0px));
@@ -1678,5 +2008,9 @@ select {
   .help-whatsapp-icon svg {
     width: 22px;
     height: 22px;
+  }
+
+  .help-whatsapp.is-remision-active {
+    bottom: calc(78px + env(safe-area-inset-bottom, 0px));
   }
 }
