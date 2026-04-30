@@ -16,6 +16,7 @@
 
 body {
   margin: 0;
+  width: 100%;
   min-width: 320px;
   min-height: 100vh;
 }
@@ -254,7 +255,7 @@ body {
 /* Página de login - Sistema IRIS: mismo estilo que dashboard (Plus Jakarta, colores IRIS) */
 .login-page {
   min-height: 100vh;
-  width: 100vw;
+  width: 100%;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -348,7 +349,7 @@ body {
   align-items: flex-start;
   justify-content: center;
   padding: 24px 24px 48px;
-  padding-top: calc(10vh + 6px);
+  padding-top: clamp(24px, 8vh, 86px);
 }
 
 /* Card: mismo estilo que .header y .module-card del dashboard IRIS */
@@ -531,8 +532,9 @@ body {
   box-shadow: 0 24px 48px rgba(31, 63, 131, 0.25), 0 0 0 1px rgba(241, 154, 62, 0.15);
   display: grid;
   grid-template-columns: 1fr 1fr;
-  min-width: 560px;
+  min-width: min(560px, calc(100vw - 32px));
   max-width: 680px;
+  width: 100%;
   overflow: hidden;
   animation: loginCardIn 0.4s ease;
 }
@@ -587,6 +589,7 @@ body {
 
 .login-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   margin-top: 8px;
 }
@@ -616,6 +619,11 @@ body {
   background: rgba(31, 63, 131, 0.08);
 }
 
+.login-actions .primary,
+.login-actions .secondary {
+  margin-top: 0;
+}
+
 #login-error {
   font-size: 13px;
   color: #6b1319;
@@ -630,8 +638,17 @@ body {
 @media (max-width: 640px) {
   .login-card {
     grid-template-columns: 1fr;
-    min-width: 320px;
+    min-width: min(320px, calc(100vw - 24px));
     max-width: 90vw;
+  }
+
+  .login-actions {
+    flex-direction: column;
+  }
+
+  .login-actions .primary,
+  .login-actions .secondary {
+    width: 100%;
   }
 
 }
@@ -1590,6 +1607,11 @@ select {
     flex-wrap: wrap;
   }
 
+  .user-pill {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
   .header-back-btn {
     padding: 10px 14px;
   }
@@ -1941,7 +1963,15 @@ select {
   }
 
   .header-right {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
     gap: 10px;
+  }
+
+  .user-pill {
+    width: 100%;
+    text-align: center;
   }
 
   .header-back-btn {
