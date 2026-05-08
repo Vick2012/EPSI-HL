@@ -22,7 +22,7 @@ COPY . .
 #    usando banderas `--build-arg`. Tienen valores por defecto locales para que no rompa si olvidas inyectarlos.
 ARG VITE_API_URL=https://backend-1069972740102.us-west1.run.app
 ARG VITE_ASSETS_URL=https://backend-1069972740102.us-west1.run.app
-ARG VITE_WHATSAPP_NUMBER=
+ARG VITE_WHATSAPP_NUMBER=573113179443
 ARG VITE_WHATSAPP_MESSAGE=Hola, necesito ayuda con el Sistema IRIS
 
 # 8. Mapea y "fija" los valores ARG hacia variables de entorno (ENV) estáticas
