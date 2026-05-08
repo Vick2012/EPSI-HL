@@ -2145,3 +2145,85 @@ select {
     bottom: calc(78px + env(safe-area-inset-bottom, 0px));
   }
 }
+
+/* ── Mobile sidebar drawer (≤1024px) ── */
+@media (max-width: 1024px) {
+  .page {
+    grid-template-columns: 1fr;
+  }
+
+  /* Sidebar siempre como drawer en mobile, ignorar collapsed */
+  .sidebar,
+  .page.sidebar-collapsed .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 260px !important;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: 200;
+    padding: 24px 18px !important;
+    gap: 24px !important;
+  }
+
+  /* Restaurar nav-items a su estado normal en mobile */
+  .page.sidebar-collapsed .nav-item {
+    justify-content: flex-start !important;
+    padding: 12px 14px !important;
+    gap: 12px !important;
+  }
+
+  .page.sidebar-collapsed .nav-item .nav-label {
+    display: inline !important;
+  }
+
+  .page.sidebar-collapsed .brand-content {
+    display: flex !important;
+  }
+
+  .page.sidebar-collapsed .sidebar .brand-logo {
+    width: 72px !important;
+    height: 72px !important;
+    display: block !important;
+  }
+
+  /* Abrir sidebar */
+  .page.sidebar-open .sidebar,
+  .page.sidebar-collapsed.sidebar-open .sidebar {
+    transform: translateX(0);
+  }
+
+  /* Overlay */
+  .sidebar-overlay {
+    display: block !important;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .page.sidebar-open .sidebar-overlay,
+  .page.sidebar-collapsed.sidebar-open .sidebar-overlay {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Solo hamburguesa del header en mobile */
+  .header-menu-btn {
+    display: flex !important;
+  }
+
+  .sidebar-toggle {
+    display: none !important;
+  }
+}
+
+/* Toggle más visible en desktop colapsado */
+.page.sidebar-collapsed .sidebar-toggle {
+  width: 40px;
+  height: 40px;
+  background: rgba(255,255,255,0.18);
+  border-color: rgba(255,255,255,0.55);
+  margin: 0 auto;
+  display: flex;
+}

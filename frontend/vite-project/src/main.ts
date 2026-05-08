@@ -142,7 +142,7 @@ app.innerHTML = `
   <div id="app-content" class="page hidden">
     <aside class="sidebar">
       <div class="brand compact">
-        <div class="brand-row">
+        <div class="brand-row" style="display:flex;align-items:center;justify-content:space-between;">
           <div class="brand-content" style="display:flex;align-items:center;gap:10px;min-width:0;overflow:hidden;">
             <img id="brand-logo" class="brand-logo" alt="EPSI HL" />
             <div style="min-width:0;">
@@ -189,7 +189,7 @@ app.innerHTML = `
 
     <div class="main">
       <header class="header">
-        <div class="header-brand" style="display:flex;align-items:center;gap:8px;">
+        <div class="header-brand" style="display:flex;align-items:center;gap:0;">
           <button id="header-menu-btn" class="header-menu-btn" aria-label="Abrir menú">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
           </button>
@@ -653,26 +653,26 @@ logoImg.addEventListener("error", () => {
   logoImg.style.display = "none";
 });
 
-// ── Sidebar toggle (colapsable en desktop / drawer en mobile) ──────────────
+// ── Sidebar: colapsable en desktop, drawer en mobile ─────────────────────────
 const pageEl = app.querySelector<HTMLDivElement>(".page")!;
-const sidebarOverlay = app.querySelector<HTMLDivElement>("#sidebar-overlay")!;
-const sidebarToggleBtn = app.querySelector<HTMLButtonElement>("#sidebar-toggle")!;
+const sidebarOverlayEl = app.querySelector<HTMLDivElement>("#sidebar-overlay")!;
+const sidebarToggleBtn = app.querySelector<HTMLButtonElement>("#sidebar-toggle");
 const headerMenuBtn = app.querySelector<HTMLButtonElement>("#header-menu-btn");
 
 const SIDEBAR_COLLAPSED_KEY = "epsiSidebarCollapsed";
 const isMobile = () => window.innerWidth <= 1024;
 
-// Restaurar estado colapsado en desktop al cargar
 if (!isMobile() && localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1") {
   pageEl.classList.add("sidebar-collapsed");
 }
 
-function closeSidebar() {
-  if (isMobile()) {
-    pageEl.classList.remove("sidebar-open");
-  } else {
-    pageEl.classList.add("sidebar-collapsed");
-    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, "1");
+const sidebarEl = app.querySelector<HTMLElement>(".sidebar")!;
+
+function updateToggleLabel() {
+  const collapsed = pageEl.classList.contains("sidebar-collapsed");
+  if (sidebarToggleBtn) {
+    sidebarToggleBtn.setAttribute("aria-label", collapsed ? "Expandir menú" : "Colapsar menú");
+    sidebarToggleBtn.title = collapsed ? "Expandir menú" : "Colapsar menú";
   }
 }
 
@@ -682,6 +682,17 @@ function openSidebar() {
   } else {
     pageEl.classList.remove("sidebar-collapsed");
     localStorage.setItem(SIDEBAR_COLLAPSED_KEY, "0");
+    updateToggleLabel();
+  }
+}
+
+function closeSidebar() {
+  if (isMobile()) {
+    pageEl.classList.remove("sidebar-open");
+  } else {
+    pageEl.classList.add("sidebar-collapsed");
+    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, "1");
+    updateToggleLabel();
   }
 }
 
@@ -689,32 +700,36 @@ function toggleSidebar() {
   if (isMobile()) {
     pageEl.classList.toggle("sidebar-open");
   } else {
-    if (pageEl.classList.contains("sidebar-collapsed")) {
-      openSidebar();
-    } else {
-      closeSidebar();
-    }
+    pageEl.classList.contains("sidebar-collapsed") ? openSidebar() : closeSidebar();
   }
 }
 
-sidebarToggleBtn?.addEventListener("click", toggleSidebar);
-headerMenuBtn?.addEventListener("click", toggleSidebar);
+// Inicializar label correcto al cargar
+updateToggleLabel();
 
-// Cerrar al hacer click en el overlay (mobile)
-sidebarOverlay.addEventListener("click", () => {
-  pageEl.classList.remove("sidebar-open");
+sidebarToggleBtn?.addEventListener("click", (e) => {
+  e.stopPropagation();
+  toggleSidebar();
+});
+headerMenuBtn?.addEventListener("click", toggleSidebar);
+sidebarOverlayEl.addEventListener("click", () => pageEl.classList.remove("sidebar-open"));
+
+// En desktop colapsado: click en cualquier parte del sidebar lo expande
+sidebarEl.addEventListener("click", (e) => {
+  if (!isMobile() && pageEl.classList.contains("sidebar-collapsed")) {
+    const clickedNavItem = (e.target as HTMLElement).closest(".nav-item");
+    if (!clickedNavItem) {
+      openSidebar();
+    }
+  }
 });
 
-// En mobile, cerrar sidebar al navegar
 app.querySelectorAll(".nav-item").forEach((btn) => {
   btn.addEventListener("click", () => {
-    if (isMobile()) {
-      pageEl.classList.remove("sidebar-open");
-    }
+    if (isMobile()) pageEl.classList.remove("sidebar-open");
   });
 });
 
-// Al cambiar tamaño de ventana, limpiar estados que no corresponden
 window.addEventListener("resize", () => {
   if (!isMobile()) {
     pageEl.classList.remove("sidebar-open");
@@ -724,6 +739,7 @@ window.addEventListener("resize", () => {
   } else {
     pageEl.classList.remove("sidebar-collapsed");
   }
+  updateToggleLabel();
 });
 // ─────────────────────────────────────────────────────────────────────────────
 
