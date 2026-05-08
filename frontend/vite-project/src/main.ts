@@ -143,47 +143,60 @@ app.innerHTML = `
     <aside class="sidebar">
       <div class="brand compact">
         <div class="brand-row">
-          <img id="brand-logo" class="brand-logo" alt="EPSI HL" />
-          <div class="logo">EPSI HL S.A.S</div>
+          <div class="brand-content" style="display:flex;align-items:center;gap:10px;min-width:0;overflow:hidden;">
+            <img id="brand-logo" class="brand-logo" alt="EPSI HL" />
+            <div style="min-width:0;">
+              <div class="logo">EPSI HL S.A.S</div>
+              <div class="subtitle">Sistema interno</div>
+            </div>
+          </div>
+          <button id="sidebar-toggle" class="sidebar-toggle" aria-label="Colapsar menú" title="Colapsar menú">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
         </div>
-        <div class="subtitle">Sistema interno</div>
       </div>
       <nav class="nav">
         <button class="nav-item active" data-go-inicio data-nav="inicio">
           <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
-          INICIO
+          <span class="nav-label">INICIO</span>
         </button>
         <button class="nav-item" data-go-remisiones data-nav="remisiones">
           <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>
-          REMISIONES
+          <span class="nav-label">REMISIONES</span>
         </button>
         <button class="nav-item" disabled data-nav="turno" data-management-only>
           <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
-          TURNO
+          <span class="nav-label">TURNO</span>
         </button>
         <button class="nav-item" disabled data-nav="reportes" data-management-only>
           <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg></span>
-          REPORTES
+          <span class="nav-label">REPORTES</span>
         </button>
         <button class="nav-item" disabled data-nav="bi" data-management-only>
           <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
-          INTELIGENCIA DE NEGOCIO (BI)
+          <span class="nav-label">INTELIGENCIA DE NEGOCIO (BI)</span>
         </button>
         <button class="nav-item" data-go-usuarios data-nav="usuarios" data-management-only>
           <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
-          USUARIOS Y CONTRASEÑAS
+          <span class="nav-label">USUARIOS Y CONTRASEÑAS</span>
         </button>
       </nav>
       <div class="sidebar-footer">
         <span class="env-pill">${import.meta.env.PROD ? "Prod" : "Dev"}</span>
       </div>
     </aside>
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
     <div class="main">
       <header class="header">
-        <div class="header-brand">
-          <h1 class="page-title">Sistema IRIS</h1>
-          <p class="header-subtitle">Sistema de gestión, de consulta e información</p>
+        <div class="header-brand" style="display:flex;align-items:center;gap:0;">
+          <button id="header-menu-btn" class="header-menu-btn" aria-label="Abrir menú">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <div>
+            <h1 class="page-title">Sistema IRIS</h1>
+            <p class="header-subtitle">Sistema de gestión, de consulta e información</p>
+          </div>
         </div>
         <div class="header-right">
           <span id="current-user" class="user-pill hidden"></span>
@@ -639,6 +652,80 @@ logoImg.addEventListener("error", () => {
   }
   logoImg.style.display = "none";
 });
+
+// ── Sidebar toggle (colapsable en desktop / drawer en mobile) ──────────────
+const pageEl = app.querySelector<HTMLDivElement>(".page")!;
+const sidebarOverlay = app.querySelector<HTMLDivElement>("#sidebar-overlay")!;
+const sidebarToggleBtn = app.querySelector<HTMLButtonElement>("#sidebar-toggle")!;
+const headerMenuBtn = app.querySelector<HTMLButtonElement>("#header-menu-btn");
+
+const SIDEBAR_COLLAPSED_KEY = "epsiSidebarCollapsed";
+const isMobile = () => window.innerWidth <= 1024;
+
+// Restaurar estado colapsado en desktop al cargar
+if (!isMobile() && localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1") {
+  pageEl.classList.add("sidebar-collapsed");
+}
+
+function closeSidebar() {
+  if (isMobile()) {
+    pageEl.classList.remove("sidebar-open");
+  } else {
+    pageEl.classList.add("sidebar-collapsed");
+    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, "1");
+  }
+}
+
+function openSidebar() {
+  if (isMobile()) {
+    pageEl.classList.add("sidebar-open");
+  } else {
+    pageEl.classList.remove("sidebar-collapsed");
+    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, "0");
+  }
+}
+
+function toggleSidebar() {
+  if (isMobile()) {
+    pageEl.classList.toggle("sidebar-open");
+  } else {
+    if (pageEl.classList.contains("sidebar-collapsed")) {
+      openSidebar();
+    } else {
+      closeSidebar();
+    }
+  }
+}
+
+sidebarToggleBtn?.addEventListener("click", toggleSidebar);
+headerMenuBtn?.addEventListener("click", toggleSidebar);
+
+// Cerrar al hacer click en el overlay (mobile)
+sidebarOverlay.addEventListener("click", () => {
+  pageEl.classList.remove("sidebar-open");
+});
+
+// En mobile, cerrar sidebar al navegar
+app.querySelectorAll(".nav-item").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    if (isMobile()) {
+      pageEl.classList.remove("sidebar-open");
+    }
+  });
+});
+
+// Al cambiar tamaño de ventana, limpiar estados que no corresponden
+window.addEventListener("resize", () => {
+  if (!isMobile()) {
+    pageEl.classList.remove("sidebar-open");
+    if (localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1") {
+      pageEl.classList.add("sidebar-collapsed");
+    }
+  } else {
+    pageEl.classList.remove("sidebar-collapsed");
+  }
+});
+// ─────────────────────────────────────────────────────────────────────────────
 
 const setActiveNav = (navId: "inicio" | "remisiones" | "turno" | "reportes" | "bi" | "usuarios") => {
   app.querySelectorAll(".nav-item").forEach((btn) => {

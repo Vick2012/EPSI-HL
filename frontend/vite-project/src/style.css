@@ -16,7 +16,6 @@
 
 body {
   margin: 0;
-  width: 100%;
   min-width: 320px;
   min-height: 100vh;
 }
@@ -28,9 +27,26 @@ body {
 /* Layout */
 .page {
   display: grid;
-  grid-template-columns: minmax(240px, 260px) minmax(0, 1fr);
+  grid-template-columns: 260px minmax(0, 1fr);
   min-height: 100vh;
   background: linear-gradient(180deg, #f1f5f9 0%, #f7f8fb 50%, #e2e8f0 100%);
+  transition: grid-template-columns 0.3s ease;
+}
+.page.sidebar-collapsed {
+  grid-template-columns: 64px minmax(0, 1fr);
+}
+
+/* Sidebar overlay (backdrop para mobile) */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 199;
+  background: rgba(0, 0, 0, 0.48);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  backdrop-filter: blur(2px);
 }
 
 /* Sidebar */
@@ -42,6 +58,12 @@ body {
   flex-direction: column;
   gap: 24px;
   box-shadow: 4px 0 24px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  width: 260px;
+  flex-shrink: 0;
+  transition: width 0.3s ease, padding 0.3s ease;
+  position: relative;
+  z-index: 200;
 }
 
 .sidebar .logo,
@@ -121,6 +143,82 @@ body {
 .nav-item:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Hamburger / toggle button (dentro del sidebar) */
+.sidebar-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+  color: #ffffff;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s ease, border-color 0.2s ease;
+  padding: 0;
+}
+.sidebar-toggle:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+/* Boton hamburguesa en el header (mobile) */
+.header-menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: 1.5px solid rgba(31, 63, 131, 0.22);
+  border-radius: 8px;
+  color: #1f3f83;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s ease;
+  padding: 0;
+  margin-right: 4px;
+}
+.header-menu-btn:hover {
+  background: rgba(31, 63, 131, 0.08);
+}
+
+/* ── Sidebar colapsado (desktop) ── */
+.page.sidebar-collapsed .sidebar {
+  width: 64px;
+  padding: 20px 8px;
+  gap: 16px;
+}
+.page.sidebar-collapsed .brand-content,
+.page.sidebar-collapsed .sidebar .subtitle {
+  display: none;
+}
+.page.sidebar-collapsed .sidebar .brand-row {
+  justify-content: center;
+}
+.page.sidebar-collapsed .sidebar .brand-logo {
+  width: 38px;
+  height: 38px;
+}
+.page.sidebar-collapsed .nav-item {
+  justify-content: center;
+  padding: 12px;
+  gap: 0;
+}
+.page.sidebar-collapsed .nav-item .nav-label {
+  display: none;
+}
+.page.sidebar-collapsed .sidebar-footer {
+  display: flex;
+  justify-content: center;
+}
+.page.sidebar-collapsed .env-pill {
+  font-size: 9px;
+  padding: 2px 4px;
 }
 
 .sidebar-footer {
@@ -255,7 +353,7 @@ body {
 /* Página de login - Sistema IRIS: mismo estilo que dashboard (Plus Jakarta, colores IRIS) */
 .login-page {
   min-height: 100vh;
-  width: 100%;
+  width: 100vw;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -349,7 +447,7 @@ body {
   align-items: flex-start;
   justify-content: center;
   padding: 24px 24px 48px;
-  padding-top: clamp(24px, 8vh, 86px);
+  padding-top: calc(10vh + 6px);
 }
 
 /* Card: mismo estilo que .header y .module-card del dashboard IRIS */
@@ -532,9 +630,8 @@ body {
   box-shadow: 0 24px 48px rgba(31, 63, 131, 0.25), 0 0 0 1px rgba(241, 154, 62, 0.15);
   display: grid;
   grid-template-columns: 1fr 1fr;
-  min-width: min(560px, calc(100vw - 32px));
+  min-width: 560px;
   max-width: 680px;
-  width: 100%;
   overflow: hidden;
   animation: loginCardIn 0.4s ease;
 }
@@ -589,7 +686,6 @@ body {
 
 .login-actions {
   display: flex;
-  flex-wrap: wrap;
   gap: 12px;
   margin-top: 8px;
 }
@@ -619,11 +715,6 @@ body {
   background: rgba(31, 63, 131, 0.08);
 }
 
-.login-actions .primary,
-.login-actions .secondary {
-  margin-top: 0;
-}
-
 #login-error {
   font-size: 13px;
   color: #6b1319;
@@ -638,17 +729,8 @@ body {
 @media (max-width: 640px) {
   .login-card {
     grid-template-columns: 1fr;
-    min-width: min(320px, calc(100vw - 24px));
+    min-width: 320px;
     max-width: 90vw;
-  }
-
-  .login-actions {
-    flex-direction: column;
-  }
-
-  .login-actions .primary,
-  .login-actions .secondary {
-    width: 100%;
   }
 
 }
@@ -1557,59 +1639,85 @@ select {
 }
 
 @media (max-width: 1024px) {
+  /* En mobile/tablet el sidebar es un drawer lateral */
   .page {
     grid-template-columns: 1fr;
   }
 
   .sidebar {
-    position: sticky;
+    position: fixed;
     top: 0;
-    z-index: 20;
-    padding: 14px 16px;
-    gap: 14px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    left: 0;
+    height: 100vh;
+    width: 280px !important;
+    z-index: 200;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    padding: 24px 18px !important;
+    gap: 24px !important;
+    overflow-y: auto;
   }
 
-  .sidebar .brand-row {
-    justify-content: flex-start;
+  .page.sidebar-open .sidebar {
+    transform: translateX(0);
+    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.22);
   }
 
-  .sidebar .brand-logo {
-    width: 58px;
-    height: 58px;
+  /* Backdrop visible en mobile */
+  .sidebar-overlay {
+    display: block;
+  }
+  .page.sidebar-open .sidebar-overlay {
+    opacity: 1;
+    pointer-events: all;
   }
 
-  .nav {
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 8px;
+  /* Forzar elementos del sidebar visibles al estar abierto */
+  .page.sidebar-open .brand-content,
+  .page.sidebar-open .sidebar .subtitle {
+    display: block !important;
+  }
+  .page.sidebar-open .sidebar .brand-logo {
+    width: 72px !important;
+    height: 72px !important;
+  }
+  .page.sidebar-open .nav-item {
+    justify-content: flex-start !important;
+    padding: 12px 14px !important;
+    gap: 12px !important;
+  }
+  .page.sidebar-open .nav-item .nav-label {
+    display: inline !important;
+  }
+  .page.sidebar-open .sidebar .brand-row {
+    justify-content: space-between !important;
   }
 
-  .nav-item {
-    flex: 1 1 180px;
-    justify-content: center;
-    padding: 10px 12px;
+  /* Boton hamburguesa visible en mobile */
+  .header-menu-btn {
+    display: flex;
   }
 
-  .sidebar-footer {
-    margin-top: 0;
+  /* Ocultar toggle de desktop en mobile */
+  .sidebar-toggle {
+    display: none;
+  }
+
+  /* No aplicar colapso en mobile (el sidebar es drawer) */
+  .page.sidebar-collapsed .sidebar {
+    width: 280px !important;
+    padding: 24px 18px !important;
   }
 
   .header {
     flex-wrap: wrap;
-    padding: 16px 18px;
-    gap: 14px;
+    padding: 14px 16px;
+    gap: 12px;
   }
 
   .header-right {
-    width: 100%;
     justify-content: space-between;
     flex-wrap: wrap;
-  }
-
-  .user-pill {
-    max-width: 100%;
-    overflow-wrap: anywhere;
   }
 
   .header-back-btn {
@@ -1963,15 +2071,7 @@ select {
   }
 
   .header-right {
-    flex-direction: column;
-    align-items: stretch;
-    width: 100%;
     gap: 10px;
-  }
-
-  .user-pill {
-    width: 100%;
-    text-align: center;
   }
 
   .header-back-btn {
