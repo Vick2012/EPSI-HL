@@ -20,8 +20,8 @@ COPY . .
 
 # 7. Declara argumentos de construcción (ARG). Estos deben inyectarse al construir el contenedor 
 #    usando banderas `--build-arg`. Tienen valores por defecto locales para que no rompa si olvidas inyectarlos.
-ARG VITE_API_URL=http://localhost:3001
-ARG VITE_ASSETS_URL=http://localhost:3001
+ARG VITE_API_URL=https://backend-1069972740102.us-west1.run.app
+ARG VITE_ASSETS_URL=https://backend-1069972740102.us-west1.run.app
 ARG VITE_WHATSAPP_NUMBER=
 ARG VITE_WHATSAPP_MESSAGE=Hola, necesito ayuda con el Sistema IRIS
 
