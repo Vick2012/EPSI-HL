@@ -60,16 +60,7 @@ const getPdfFilename = (response: Response, fallbackNumero?: string) => {
 };
 
 const downloadPdfBlob = async (blob: Blob, filename: string) => {
-  const file = new File([blob], filename, { type: blob.type || "application/pdf" });
-  if ("canShare" in navigator && navigator.canShare?.({ files: [file] })) {
-    try {
-      await navigator.share({ files: [file], title: filename });
-      return;
-    } catch {
-      // Si el usuario cancela o el navegador falla, usamos descarga tradicional.
-    }
-  }
-
+  // Siempre descargar primero
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -79,6 +70,18 @@ const downloadPdfBlob = async (blob: Blob, filename: string) => {
   link.click();
   link.remove();
   globalThis.setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+  // Ofrecer compartir despues de descargar (solo si el navegador lo soporta)
+  const file = new File([blob], filename, { type: blob.type || "application/pdf" });
+  if ("canShare" in navigator && navigator.canShare?.({ files: [file] })) {
+    globalThis.setTimeout(async () => {
+      try {
+        await navigator.share({ files: [file], title: filename });
+      } catch {
+        // El usuario cerro el menu de compartir, no hacer nada
+      }
+    }, 800);
+  }
 };
 
 app.innerHTML = `
@@ -182,6 +185,28 @@ app.innerHTML = `
         </button>
       </nav>
       <div class="sidebar-footer">
+        <div class="sidebar-user-section">
+          <div class="sidebar-user-info">
+            <span class="sidebar-user-avatar" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </span>
+            <span id="current-user" class="sidebar-user-email hidden"></span>
+          </div>
+          <button id="back-button" class="sidebar-logout-btn" aria-label="Cerrar Sesión">
+            <span aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            </span>
+            <span class="sidebar-logout-label">Cerrar Sesión</span>
+          </button>
+        </div>
+        ${hasWhatsAppHelp() ? `
+        <a id="help-whatsapp" class="sidebar-whatsapp-btn" href="${getWhatsAppHelpUrl()}" target="_blank" rel="noopener noreferrer">
+          <span class="sidebar-whatsapp-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          </span>
+          <span class="sidebar-whatsapp-label">¿Necesitas ayuda?</span>
+        </a>
+        ` : ""}
         <span class="env-pill">${import.meta.env.PROD ? "Prod" : "Dev"}</span>
       </div>
     </aside>
@@ -197,15 +222,6 @@ app.innerHTML = `
             <h1 class="page-title">Sistema IRIS</h1>
             <p class="header-subtitle">Sistema de gestión, de consulta e información</p>
           </div>
-        </div>
-        <div class="header-right">
-          <span id="current-user" class="user-pill hidden"></span>
-          <button id="back-button" class="header-back-btn" aria-label="Cerrar Sesión">
-            <span class="header-back-icon" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-            </span>
-            Cerrar Sesión
-          </button>
         </div>
       </header>
 
@@ -314,6 +330,14 @@ app.innerHTML = `
           </div>
           <div class="client-actions">
             <button id="buscar-remision" class="secondary" type="button">Buscar</button>
+            <button id="nueva-remision-btn" class="btn-nueva-remision" type="button">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Nueva remisión
+            </button>
+            <button id="editar-remision-btn" class="btn-editar-remision hidden" type="button">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Editar remisión
+            </button>
             <button id="cancelar-edicion-remision" class="secondary hidden" type="button">Cancelar edición</button>
             <span id="buscar-remision-status" class="status"></span>
           </div>
@@ -406,12 +430,10 @@ app.innerHTML = `
                       <option value="bancolombia">Transferencia - Bancolombia</option>
                     </select>
                   </label>
-                  <label>Total
-                    <input id="remision-total" type="number" value="0" min="0" />
+                  <label>Bodega
+                    <input id="remision-bodega" class="uppercase-input" type="text" placeholder="Ej: BODEGA 1" />
                   </label>
-                  <label>Observaciones
-                    <input id="remision-observaciones" type="text" placeholder="Observaciones" />
-                  </label>
+                  <input id="remision-total" type="number" value="0" min="0" style="display:none;" />
                   <label id="remision-anulada-wrap" class="admin-only hidden">Anulada
                     <input id="remision-anulada" type="checkbox" />
                   </label>
@@ -426,11 +448,16 @@ app.innerHTML = `
                   <div class="items-row">
                     <input class="item-cantidad" type="number" value="1" min="1" />
                     <input class="item-descripcion" type="text" placeholder="Descripción" />
-                    <input class="item-unitario" type="number" value="0" min="0" />
-                    <input class="item-subtotal" type="number" value="0" min="0" readonly />
+                    <input class="item-unitario" type="number" placeholder="0" min="0" />
+                    <input class="item-subtotal" type="number" placeholder="0" min="0" readonly />
                   </div>
                 </div>
                 <button id="add-item" class="secondary">Agregar item</button>
+                <div class="observaciones-wrap">
+                  <label class="observaciones-label">Observaciones
+                    <input id="remision-observaciones" type="text" placeholder="Observaciones (opcional)" />
+                  </label>
+                </div>
               </div>
             </section>
 
@@ -438,14 +465,13 @@ app.innerHTML = `
               <div class="card wizard-card">
                 <h2>Paso 3: Resumen y generación</h2>
                 <p class="wizard-hint">Revisa los totales y genera el PDF cuando todo esté correcto.</p>
-                <div class="wizard-bodega-wrap">
-                  <label class="wizard-bodega-field">Bodega
-                    <input id="remision-bodega" class="uppercase-input" type="text" placeholder="            " />
-                  </label>
+                <div id="remision-preview" class="remision-preview">
+                  <!-- Preview generado dinámicamente -->
                 </div>
                 <div class="totals wizard-totals">
                   <div>Subtotal: <span id="subtotal">$ 0</span></div>
-                  <div>Total: <span id="total">$ 0</span></div>
+                  <div class="totals-iva">IVA (19%): <span id="iva-valor">$ 0</span></div>
+                  <div class="totals-total">Total: <span id="total">$ 0</span></div>
                 </div>
                 <button id="guardar-remision" class="secondary hidden" type="button">Guardar cambios</button>
                 <button id="generar" class="primary wizard-generar">Generar PDF</button>
@@ -548,14 +574,6 @@ app.innerHTML = `
       </main>
     </div>
   </div>
-  ${hasWhatsAppHelp() ? `
-  <a id="help-whatsapp" class="help-whatsapp" href="${getWhatsAppHelpUrl()}" target="_blank" rel="noopener noreferrer" aria-label="¿Necesitas ayuda? Contáctanos por WhatsApp">
-    <span class="help-whatsapp-icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-    </span>
-    <span class="help-whatsapp-label">¿Necesitas ayuda?</span>
-  </a>
-  ` : ""}
 `;
 
 const homeView = app.querySelector<HTMLDivElement>("#home-view")!;
@@ -578,6 +596,8 @@ const buscarRemisionSection = app.querySelector<HTMLDivElement>("#remision-busca
 const buscarRemisionNumeroInput = app.querySelector<HTMLInputElement>("#buscar-remision-numero")!;
 const buscarRemisionBtn = app.querySelector<HTMLButtonElement>("#buscar-remision")!;
 const cancelarEdicionRemisionBtn = app.querySelector<HTMLButtonElement>("#cancelar-edicion-remision")!;
+const editarRemisionBtn = app.querySelector<HTMLButtonElement>("#editar-remision-btn")!;
+const nuevaRemisionBtn = app.querySelector<HTMLButtonElement>("#nueva-remision-btn")!;
 const buscarRemisionStatus = app.querySelector<HTMLSpanElement>("#buscar-remision-status")!;
 const guardarRemisionBtn = app.querySelector<HTMLButtonElement>("#guardar-remision")!;
 const clienteStatusEl = app.querySelector<HTMLSpanElement>("#cliente-status")!;
@@ -666,23 +686,12 @@ if (!isMobile() && localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1") {
   pageEl.classList.add("sidebar-collapsed");
 }
 
-const sidebarEl = app.querySelector<HTMLElement>(".sidebar")!;
-
-function updateToggleLabel() {
-  const collapsed = pageEl.classList.contains("sidebar-collapsed");
-  if (sidebarToggleBtn) {
-    sidebarToggleBtn.setAttribute("aria-label", collapsed ? "Expandir menú" : "Colapsar menú");
-    sidebarToggleBtn.title = collapsed ? "Expandir menú" : "Colapsar menú";
-  }
-}
-
 function openSidebar() {
   if (isMobile()) {
     pageEl.classList.add("sidebar-open");
   } else {
     pageEl.classList.remove("sidebar-collapsed");
     localStorage.setItem(SIDEBAR_COLLAPSED_KEY, "0");
-    updateToggleLabel();
   }
 }
 
@@ -692,7 +701,6 @@ function closeSidebar() {
   } else {
     pageEl.classList.add("sidebar-collapsed");
     localStorage.setItem(SIDEBAR_COLLAPSED_KEY, "1");
-    updateToggleLabel();
   }
 }
 
@@ -704,25 +712,9 @@ function toggleSidebar() {
   }
 }
 
-// Inicializar label correcto al cargar
-updateToggleLabel();
-
-sidebarToggleBtn?.addEventListener("click", (e) => {
-  e.stopPropagation();
-  toggleSidebar();
-});
+sidebarToggleBtn?.addEventListener("click", toggleSidebar);
 headerMenuBtn?.addEventListener("click", toggleSidebar);
 sidebarOverlayEl.addEventListener("click", () => pageEl.classList.remove("sidebar-open"));
-
-// En desktop colapsado: click en cualquier parte del sidebar lo expande
-sidebarEl.addEventListener("click", (e) => {
-  if (!isMobile() && pageEl.classList.contains("sidebar-collapsed")) {
-    const clickedNavItem = (e.target as HTMLElement).closest(".nav-item");
-    if (!clickedNavItem) {
-      openSidebar();
-    }
-  }
-});
 
 app.querySelectorAll(".nav-item").forEach((btn) => {
   btn.addEventListener("click", () => {
@@ -739,7 +731,6 @@ window.addEventListener("resize", () => {
   } else {
     pageEl.classList.remove("sidebar-collapsed");
   }
-  updateToggleLabel();
 });
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -914,7 +905,7 @@ const login = async () => {
       await refreshRole();
     }
     clearRemisionForm();
-    currentUserEl.textContent = `Usuario: ${data.email}`;
+    currentUserEl.textContent = data.email;
     currentUserEl.classList.remove("hidden");
     statusEl.textContent = "Sesión iniciada.";
     closeLogin();
@@ -1125,6 +1116,74 @@ exportarClientesBtn.addEventListener("click", async () => {
     clienteStatusEl.textContent = "Error exportando la base de datos.";
   }
 });
+const renderPreview = () => {
+  const previewEl = app.querySelector<HTMLDivElement>("#remision-preview");
+  if (!previewEl) return;
+
+  const numero = (app.querySelector<HTMLInputElement>("#remision-numero")!).value;
+  const fecha = (app.querySelector<HTMLDivElement>("#remision-fecha")!).textContent || "";
+  const pago = (app.querySelector<HTMLSelectElement>("#remision-pago")!);
+  const pagoText = pago.options[pago.selectedIndex]?.text || "";
+  const bodega = (app.querySelector<HTMLInputElement>("#remision-bodega")!).value || "—";
+  const observaciones = (app.querySelector<HTMLInputElement>("#remision-observaciones")!).value || "—";
+  const nombre = (app.querySelector<HTMLInputElement>("#cliente-nombre")!).value || "—";
+  const nit = (app.querySelector<HTMLInputElement>("#cliente-nit")!).value || "—";
+  const ciudad = (app.querySelector<HTMLInputElement>("#cliente-ciudad")!).value || "—";
+  const direccion = (app.querySelector<HTMLInputElement>("#cliente-direccion")!).value || "—";
+  const telefono = (app.querySelector<HTMLInputElement>("#cliente-telefono")!).value || "—";
+
+  const itemRows = Array.from(app.querySelectorAll<HTMLDivElement>(".items-row"));
+  const itemsHtml = itemRows.map((row) => {
+    const cantidad = row.querySelector<HTMLInputElement>(".item-cantidad")!.value;
+    const desc = row.querySelector<HTMLInputElement>(".item-descripcion")!.value || "—";
+    const unitario = Number(row.querySelector<HTMLInputElement>(".item-unitario")!.value || 0);
+    const subtotal = Number(row.querySelector<HTMLInputElement>(".item-subtotal")!.value || 0);
+    return `<tr>
+      <td>${cantidad}</td>
+      <td>${desc}</td>
+      <td>${formatCurrency(unitario)}</td>
+      <td>${formatCurrency(subtotal)}</td>
+    </tr>`;
+  }).join("");
+
+  previewEl.innerHTML = `
+    <div class="preview-header">
+      <div class="preview-title-row">
+        <span class="preview-badge">Vista previa de remisión</span>
+        <span class="preview-numero">${numero}</span>
+      </div>
+    </div>
+    <div class="preview-section">
+      <div class="preview-section-title">Datos del cliente</div>
+      <div class="preview-grid">
+        <div><span class="preview-label">Nombre</span><span class="preview-val">${nombre}</span></div>
+        <div><span class="preview-label">NIT / C.C.</span><span class="preview-val">${nit}</span></div>
+        <div><span class="preview-label">Ciudad</span><span class="preview-val">${ciudad}</span></div>
+        <div><span class="preview-label">Dirección</span><span class="preview-val">${direccion}</span></div>
+        <div><span class="preview-label">Teléfono</span><span class="preview-val">${telefono}</span></div>
+      </div>
+    </div>
+    <div class="preview-section">
+      <div class="preview-section-title">Datos de la remisión</div>
+      <div class="preview-grid">
+        <div><span class="preview-label">Fecha</span><span class="preview-val">${fecha}</span></div>
+        <div><span class="preview-label">Método de pago</span><span class="preview-val">${pagoText}</span></div>
+        <div><span class="preview-label">Bodega</span><span class="preview-val">${bodega}</span></div>
+        <div><span class="preview-label">Observaciones</span><span class="preview-val">${observaciones}</span></div>
+      </div>
+    </div>
+    <div class="preview-section">
+      <div class="preview-section-title">Items</div>
+      <div class="preview-table-wrap">
+        <table class="preview-table">
+          <thead><tr><th>Cant.</th><th>Descripción</th><th>Valor unitario</th><th>Subtotal</th></tr></thead>
+          <tbody>${itemsHtml}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+};
+
 const goToWizardStep = (step: number) => {
   if (step < 1 || step > WIZARD_MAX_STEP) return;
   wizardCurrentStep = step;
@@ -1151,6 +1210,7 @@ const goToWizardStep = (step: number) => {
 
   wizardPrevBtn.classList.toggle("hidden", step === 1);
   wizardNextBtn.classList.toggle("hidden", step === WIZARD_MAX_STEP);
+  if (step === 3) renderPreview();
 };
 
 const clearWizardError = () => {
@@ -1271,18 +1331,25 @@ backButton.addEventListener("click", () => {
 
 const recalc = () => {
   const itemRows = Array.from(app.querySelectorAll<HTMLDivElement>(".items-row"));
+  let total = 0;
   itemRows.forEach((row) => {
     const cantidad = Number(row.querySelector<HTMLInputElement>(".item-cantidad")!.value || 0);
     const unitario = Number(row.querySelector<HTMLInputElement>(".item-unitario")!.value || 0);
     const rowSubtotal = cantidad * unitario;
     row.querySelector<HTMLInputElement>(".item-subtotal")!.value = String(rowSubtotal);
+    total += rowSubtotal;
   });
 
-  const totalInput = Number(app.querySelector<HTMLInputElement>("#remision-total")!.value || 0);
-  const subtotal = totalInput / 1.19;
-  const total = totalInput;
+  // Actualizar el campo oculto para que buildRemisionPayload lo use
+  const totalInput = app.querySelector<HTMLInputElement>("#remision-total")!;
+  if (totalInput) totalInput.value = String(total);
 
+  const subtotal = total / 1.19;
+
+  const iva = total - subtotal;
   subtotalEl.textContent = formatCurrency(subtotal);
+  const ivaEl = app.querySelector<HTMLSpanElement>("#iva-valor");
+  if (ivaEl) ivaEl.textContent = formatCurrency(iva);
   totalEl.textContent = formatCurrency(total);
 };
 
@@ -1306,13 +1373,15 @@ const setItemsFromRemision = (items: Array<{ cantidad: number; descripcion: stri
 
 const enterEditMode = (numero: string) => {
   editingRemisionNumero = numero;
-  generarBtn.disabled = true;
+  generarBtn.disabled = false;
+  generarBtn.textContent = "Descargar PDF";
   applyRole(getRole());
 };
 
 const exitEditMode = () => {
   editingRemisionNumero = null;
   generarBtn.disabled = false;
+  generarBtn.textContent = "Generar PDF";
   applyRole(getRole());
 };
 
@@ -1322,8 +1391,8 @@ const addItemRow = (item?: { cantidad?: number; descripcion?: string; valorUnita
   row.innerHTML = `
     <input class="item-cantidad" type="number" value="1" min="1" />
     <input class="item-descripcion" type="text" placeholder="Descripción" />
-    <input class="item-unitario" type="number" value="0" min="0" />
-    <input class="item-subtotal" type="number" value="0" min="0" readonly />
+    <input class="item-unitario" type="number" placeholder="0" min="0" />
+    <input class="item-subtotal" type="number" placeholder="0" min="0" readonly />
   `;
   if (item) {
     (row.querySelector<HTMLInputElement>(".item-cantidad")!).value = String(item.cantidad ?? 1);
@@ -1382,7 +1451,8 @@ buscarRemisionBtn.addEventListener("click", async () => {
     enterEditMode(numero);
     recalc();
     goToWizardStep(3);
-    buscarRemisionStatus.textContent = "Remisión cargada para edición.";
+    editarRemisionBtn.classList.remove("hidden");
+    buscarRemisionStatus.textContent = "Remisión cargada. Puedes editarla desde el paso 1.";
   } catch {
     buscarRemisionStatus.textContent = "Error consultando la remisión.";
   }
@@ -1390,7 +1460,20 @@ buscarRemisionBtn.addEventListener("click", async () => {
 
 cancelarEdicionRemisionBtn.addEventListener("click", () => {
   exitEditMode();
+  editarRemisionBtn.classList.add("hidden");
   buscarRemisionStatus.textContent = "Edición cancelada.";
+});
+
+editarRemisionBtn.addEventListener("click", () => {
+  goToWizardStep(1);
+  buscarRemisionStatus.textContent = "Editando desde el paso 1.";
+});
+
+nuevaRemisionBtn.addEventListener("click", () => {
+  clearRemisionForm();
+  editarRemisionBtn.classList.add("hidden");
+  buscarRemisionNumeroInput.value = "";
+  buscarRemisionStatus.textContent = "";
 });
 
 wizardPrevBtn.addEventListener("click", () => {
@@ -1433,10 +1516,10 @@ const buildRemisionPayload = (): RemisionPayload => {
     subtotal: Number(row.querySelector<HTMLInputElement>(".item-subtotal")!.value || 0),
   }));
 
-  const total = Number(app.querySelector<HTMLInputElement>("#remision-total")!.value || 0);
+  const total = Math.round(Number(app.querySelector<HTMLInputElement>("#remision-total")!.value || 0) * 100) / 100;
   const ivaPorcentaje = 19;
-  const subtotal = total / 1.19;
-  const iva = total - subtotal;
+  const subtotal = Math.round((total / 1.19) * 100) / 100;
+  const iva = Math.round((total - subtotal) * 100) / 100;
 
   return {
     numero: (app.querySelector<HTMLInputElement>("#remision-numero")!.value || "0001").trim(),
@@ -1513,6 +1596,27 @@ app.querySelector("#generar")!.addEventListener("click", async () => {
     statusEl.textContent = "";
     return;
   }
+
+  // En modo edición: descargar PDF existente sin crear uno nuevo
+  if (editingRemisionNumero) {
+    statusEl.textContent = "Descargando PDF...";
+    try {
+      const pdfResponse = await fetchRemisionPdf(editingRemisionNumero, token);
+      if (pdfResponse.ok) {
+        const pdf = await pdfResponse.blob();
+        const filename = getPdfFilename(pdfResponse, editingRemisionNumero);
+        await downloadPdfBlob(pdf, filename);
+        statusEl.textContent = "PDF descargado.";
+      } else {
+        statusEl.textContent = "No se pudo descargar el PDF.";
+      }
+    } catch {
+      statusEl.textContent = "Error descargando el PDF.";
+    }
+    return;
+  }
+
+  // Modo normal: crear nueva remisión y generar PDF
   statusEl.textContent = "Generando PDF...";
   const payload = buildRemisionPayload();
 
@@ -1735,7 +1839,7 @@ syncHelpWhatsAppPosition("home");
 
 const savedUser = getUserEmail();
 if (savedUser) {
-  currentUserEl.textContent = `Usuario: ${savedUser}`;
+  currentUserEl.textContent = savedUser;
   currentUserEl.classList.remove("hidden");
 }
 applyRole(getRole());

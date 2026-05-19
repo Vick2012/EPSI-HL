@@ -448,8 +448,8 @@ function drawFooter(doc, remision) {
 }
 
 function formatCurrency(value) {
-  const number = Number(value || 0);
-  return `$ ${number.toLocaleString("es-CO")}`;
+  const number = Math.round(Number(value || 0) * 100) / 100;
+  return `$ ${number.toLocaleString("es-CO", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 }
 
 async function getLogoImage(paths, width) {

@@ -1,4 +1,4 @@
-export const formatCurrency = (value: number) => `$ ${value.toLocaleString("es-CO")}`;
+export const formatCurrency = (value: number) => `$ ${Math.round(value * 100) / 100 === 0 ? "0" : (Math.round(value * 100) / 100).toLocaleString("es-CO", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 
 export const calcularDv = (nit: string) => {
   if (!nit) return "";
