@@ -423,20 +423,47 @@ app.innerHTML = `
                   <label>Fecha y hora
                     <div id="remision-fecha" class="readonly-field"></div>
                   </label>
-                  <label>Método de pago
-                    <select id="remision-pago">
-                      <option value="efectivo">Efectivo</option>
-                      <option value="nequi">Efectivo - Nequi</option>
-                      <option value="bancolombia">Transferencia - Bancolombia</option>
-                    </select>
-                  </label>
                   <label>Bodega
                     <input id="remision-bodega" class="uppercase-input" type="text" placeholder="Ej: BODEGA 1" />
                   </label>
-                  <input id="remision-total" type="number" value="0" min="0" style="display:none;" />
                   <label id="remision-anulada-wrap" class="admin-only hidden">Anulada
                     <input id="remision-anulada" type="checkbox" />
                   </label>
+                  <div class="metodos-pago-wrap">
+                    <span class="metodos-pago-title">Método(s) de pago</span>
+                    <div class="metodos-pago-grid">
+                      <div class="metodo-pago-row">
+                        <label class="metodo-check-label">
+                          <input type="checkbox" class="metodo-check" value="efectivo" />
+                          <span class="metodo-nombre">Efectivo</span>
+                        </label>
+                        <input type="number" class="metodo-monto" placeholder="Monto $" min="0" disabled />
+                      </div>
+                      <div class="metodo-pago-row">
+                        <label class="metodo-check-label">
+                          <input type="checkbox" class="metodo-check" value="nequi" />
+                          <span class="metodo-nombre">Efectivo - Nequi</span>
+                        </label>
+                        <input type="number" class="metodo-monto" placeholder="Monto $" min="0" disabled />
+                      </div>
+                      <div class="metodo-pago-row">
+                        <label class="metodo-check-label">
+                          <input type="checkbox" class="metodo-check" value="bancolombia" />
+                          <span class="metodo-nombre">Transferencia - Bancolombia</span>
+                        </label>
+                        <input type="number" class="metodo-monto" placeholder="Monto $" min="0" disabled />
+                      </div>
+                      <div class="metodo-pago-row">
+                        <label class="metodo-check-label">
+                          <input type="checkbox" class="metodo-check" value="credito" />
+                          <span class="metodo-nombre">Crédito</span>
+                        </label>
+                        <input type="number" class="metodo-monto" placeholder="Monto $" min="0" disabled />
+                      </div>
+                    </div>
+                    <input type="hidden" id="remision-pago" value="efectivo" />
+                  </div>
+                  <input id="remision-total" type="number" value="0" min="0" style="display:none;" />
                 </div>
                 <div class="items-table">
                   <div class="items-header">
@@ -764,7 +791,12 @@ const clearRemisionForm = () => {
   clienteTelefonoInput.value = "";
   resetItemsTable();
   addItemRow();
-  (app.querySelector<HTMLSelectElement>("#remision-pago")!).value = "efectivo";
+  app.querySelectorAll<HTMLInputElement>(".metodo-check").forEach(chk => {
+    chk.checked = false;
+    const montoInput = chk.closest(".metodo-pago-row")?.querySelector<HTMLInputElement>(".metodo-monto");
+    if (montoInput) { montoInput.disabled = true; montoInput.value = ""; }
+  });
+  (app.querySelector<HTMLInputElement>("#remision-pago")!).value = "efectivo";
   (app.querySelector<HTMLInputElement>("#remision-observaciones")!).value = "";
   remisionBodegaInput.value = "";
   (app.querySelector<HTMLInputElement>("#remision-total")!).value = "0";
@@ -943,6 +975,7 @@ const updateFechaHora = () => {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
+    timeZone: "America/Bogota",
   });
   fechaEl.textContent = display;
 };
@@ -1122,8 +1155,18 @@ const renderPreview = () => {
 
   const numero = (app.querySelector<HTMLInputElement>("#remision-numero")!).value;
   const fecha = (app.querySelector<HTMLDivElement>("#remision-fecha")!).textContent || "";
-  const pago = (app.querySelector<HTMLSelectElement>("#remision-pago")!);
-  const pagoText = pago.options[pago.selectedIndex]?.text || "";
+  const metodoLabels: Record<string, string> = {
+    efectivo: "Efectivo", nequi: "Efectivo - Nequi",
+    bancolombia: "Transferencia - Bancolombia", credito: "Crédito"
+  };
+  const pagosSeleccionados = Array.from(app.querySelectorAll<HTMLInputElement>(".metodo-check"))
+    .filter(c => c.checked)
+    .map(c => {
+      const monto = c.closest(".metodo-pago-row")?.querySelector<HTMLInputElement>(".metodo-monto")?.value;
+      const montoNum = Number(monto || 0);
+      return `<div class="preview-pago-row"><span class="preview-pago-label">${metodoLabels[c.value] || c.value}</span><span class="preview-pago-monto">${montoNum ? "$" + montoNum.toLocaleString("es-CO") : "—"}</span></div>`;
+    });
+  const pagoText = pagosSeleccionados.length > 0 ? pagosSeleccionados.join("") : "<span>—</span>";
   const bodega = (app.querySelector<HTMLInputElement>("#remision-bodega")!).value || "—";
   const observaciones = (app.querySelector<HTMLInputElement>("#remision-observaciones")!).value || "—";
   const nombre = (app.querySelector<HTMLInputElement>("#cliente-nombre")!).value || "—";
@@ -1167,19 +1210,23 @@ const renderPreview = () => {
       <div class="preview-section-title">Datos de la remisión</div>
       <div class="preview-grid">
         <div><span class="preview-label">Fecha</span><span class="preview-val">${fecha}</span></div>
-        <div><span class="preview-label">Método de pago</span><span class="preview-val">${pagoText}</span></div>
+        <div class="preview-pagos-wrap"><span class="preview-label">Método(s) de pago</span><div class="preview-pagos-list">${pagoText}</div></div>
         <div><span class="preview-label">Bodega</span><span class="preview-val">${bodega}</span></div>
         <div><span class="preview-label">Observaciones</span><span class="preview-val">${observaciones}</span></div>
       </div>
     </div>
     <div class="preview-section">
-      <div class="preview-section-title">Items</div>
       <div class="preview-table-wrap">
         <table class="preview-table">
           <thead><tr><th>Cant.</th><th>Descripción</th><th>Valor unitario</th><th>Subtotal</th></tr></thead>
           <tbody>${itemsHtml}</tbody>
         </table>
       </div>
+    </div>
+    <div class="preview-totales">
+      <div class="preview-total-row"><span>Subtotal</span><span>${subtotalEl.textContent}</span></div>
+      <div class="preview-total-row preview-iva"><span>IVA (19%)</span><span>${app.querySelector("#iva-valor")?.textContent || "$ 0"}</span></div>
+      <div class="preview-total-row preview-total-final"><span>Total</span><span>${totalEl.textContent}</span></div>
     </div>
   `;
 };
@@ -1210,7 +1257,10 @@ const goToWizardStep = (step: number) => {
 
   wizardPrevBtn.classList.toggle("hidden", step === 1);
   wizardNextBtn.classList.toggle("hidden", step === WIZARD_MAX_STEP);
-  if (step === 3) renderPreview();
+  if (step === 3) {
+    recalc();
+    renderPreview();
+  }
 };
 
 const clearWizardError = () => {
@@ -1235,6 +1285,11 @@ const validateWizardStep = (step: number): boolean => {
     return true;
   }
   if (step === 2) {
+    const bodega = (app.querySelector<HTMLInputElement>("#remision-bodega")!).value.trim();
+    if (!bodega) {
+      wizardErrorEl.textContent = "El campo Bodega es obligatorio.";
+      return false;
+    }
     const rows = Array.from(app.querySelectorAll<HTMLDivElement>(".items-row"));
     const hasValid = rows.some((row) => {
       const desc = row.querySelector<HTMLInputElement>(".item-descripcion")!.value.trim();
@@ -1247,11 +1302,6 @@ const validateWizardStep = (step: number): boolean => {
     return true;
   }
   if (step === 3) {
-    const bodega = remisionBodegaInput.value.trim();
-    if (!bodega) {
-      wizardErrorEl.textContent = "Ingresa la bodega para continuar.";
-      return false;
-    }
     return true;
   }
   return true;
@@ -1330,23 +1380,37 @@ backButton.addEventListener("click", () => {
 });
 
 const recalc = () => {
+  // Calcular subtotales de items (cantidad x valor unitario)
   const itemRows = Array.from(app.querySelectorAll<HTMLDivElement>(".items-row"));
-  let total = 0;
   itemRows.forEach((row) => {
     const cantidad = Number(row.querySelector<HTMLInputElement>(".item-cantidad")!.value || 0);
     const unitario = Number(row.querySelector<HTMLInputElement>(".item-unitario")!.value || 0);
     const rowSubtotal = cantidad * unitario;
     row.querySelector<HTMLInputElement>(".item-subtotal")!.value = String(rowSubtotal);
-    total += rowSubtotal;
   });
 
-  // Actualizar el campo oculto para que buildRemisionPayload lo use
+  // Total = suma de montos de metodos de pago seleccionados
+  const metodoChecks = Array.from(app.querySelectorAll<HTMLInputElement>(".metodo-check")).filter(c => c.checked);
+  let total = 0;
+  metodoChecks.forEach(c => {
+    const monto = Number(c.closest(".metodo-pago-row")?.querySelector<HTMLInputElement>(".metodo-monto")?.value || 0);
+    total += monto;
+  });
+
+  // Si no hay metodos de pago seleccionados, sumar items como fallback
+  if (total === 0) {
+    itemRows.forEach((row) => {
+      total += Number(row.querySelector<HTMLInputElement>(".item-subtotal")!.value || 0);
+    });
+  }
+
+  total = Math.round(total * 100) / 100;
+  const subtotal = Math.round((total / 1.19) * 100) / 100;
+  const iva = Math.round((total - subtotal) * 100) / 100;
+
   const totalInput = app.querySelector<HTMLInputElement>("#remision-total")!;
   if (totalInput) totalInput.value = String(total);
 
-  const subtotal = total / 1.19;
-
-  const iva = total - subtotal;
   subtotalEl.textContent = formatCurrency(subtotal);
   const ivaEl = app.querySelector<HTMLSpanElement>("#iva-valor");
   if (ivaEl) ivaEl.textContent = formatCurrency(iva);
@@ -1412,6 +1476,19 @@ app.querySelectorAll("input, select").forEach((input) => {
   input.addEventListener("input", recalc);
 });
 
+// Toggle monto input when payment method checkbox is checked
+app.querySelectorAll<HTMLInputElement>(".metodo-check").forEach((chk) => {
+  chk.addEventListener("change", () => {
+    const montoInput = chk.closest(".metodo-pago-row")?.querySelector<HTMLInputElement>(".metodo-monto");
+    if (montoInput) {
+      montoInput.disabled = !chk.checked;
+      if (!chk.checked) montoInput.value = "";
+      montoInput.addEventListener("input", recalc);
+    }
+    recalc();
+  });
+});
+
 buscarRemisionBtn.addEventListener("click", async () => {
   const token = getToken();
   if (!token) {
@@ -1436,7 +1513,23 @@ buscarRemisionBtn.addEventListener("click", async () => {
     const remision = data.remision;
     remisionNumeroInput.value = remision.numero || numero;
     remisionAnuladaInput.checked = Boolean(remision.anulada);
-    (app.querySelector<HTMLSelectElement>("#remision-pago")!).value = remision.metodoPago || "efectivo";
+    // Reset all checkboxes first
+    app.querySelectorAll<HTMLInputElement>(".metodo-check").forEach(chk => {
+      chk.checked = false;
+      const m = chk.closest(".metodo-pago-item")?.querySelector<HTMLInputElement>(".metodo-monto");
+      if (m) { m.disabled = true; m.value = ""; }
+    });
+    // Restore from saved data
+    const savedMetodos = remision.metodosPago || [{ key: remision.metodoPago || "efectivo", monto: remision.total || 0 }];
+    savedMetodos.forEach((mp: {key: string; monto: number}) => {
+      const chk = app.querySelector<HTMLInputElement>(`.metodo-check[value="${mp.key}"]`);
+      if (chk) {
+        chk.checked = true;
+        const m = chk.closest(".metodo-pago-row")?.querySelector<HTMLInputElement>(".metodo-monto");
+        if (m) { m.disabled = false; m.value = String(mp.monto || ""); }
+      }
+    });
+    (app.querySelector<HTMLInputElement>("#remision-pago")!).value = remision.metodoPago || "efectivo";
     (app.querySelector<HTMLInputElement>("#remision-observaciones")!).value = remision.observaciones || "";
     remisionBodegaInput.value = String(remision.bodega || "").toUpperCase();
     (app.querySelector<HTMLInputElement>("#remision-total")!).value = String(remision.total || 0);
@@ -1523,8 +1616,19 @@ const buildRemisionPayload = (): RemisionPayload => {
 
   return {
     numero: (app.querySelector<HTMLInputElement>("#remision-numero")!.value || "0001").trim(),
-    fecha: new Date().toISOString(),
-    metodoPago: app.querySelector<HTMLSelectElement>("#remision-pago")!.value as RemisionPayload["metodoPago"],
+    fecha: new Date().toLocaleString("sv-SE", { timeZone: "America/Bogota" }).replace(" ", "T") + "-05:00",
+    metodoPago: (() => {
+      const checks = Array.from(app.querySelectorAll<HTMLInputElement>(".metodo-check")).filter(c => c.checked);
+      if (checks.length === 0) return "efectivo" as RemisionPayload["metodoPago"];
+      return checks[0].value as RemisionPayload["metodoPago"];
+    })(),
+    metodosPago: Array.from(app.querySelectorAll<HTMLInputElement>(".metodo-check"))
+      .filter(c => c.checked)
+      .map(c => ({
+        key: c.value,
+        label: ({efectivo: "Efectivo", nequi: "Efectivo - Nequi", bancolombia: "Transferencia - Bancolombia", credito: "Crédito"} as Record<string,string>)[c.value] || c.value,
+        monto: Number(c.closest(".metodo-pago-row")?.querySelector<HTMLInputElement>(".metodo-monto")?.value || 0)
+      })),
     observaciones: app.querySelector<HTMLInputElement>("#remision-observaciones")!.value || "",
     bodega: remisionBodegaInput.value.trim().toUpperCase(),
     anulada: remisionAnuladaInput.checked,
