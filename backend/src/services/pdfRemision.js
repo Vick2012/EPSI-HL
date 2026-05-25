@@ -139,10 +139,11 @@ function drawHeader(doc, remision, logoPath) {
     width: boxWidth,
   });
 
-  const fecha = new Date(remision.fecha);
-  const day = `${fecha.getDate()}`.padStart(2, "0");
-  const month = `${fecha.getMonth() + 1}`.padStart(2, "0");
-  const year = `${fecha.getFullYear()}`;
+  const fechaRaw = new Date(remision.fecha);
+  const fechaCol = new Date(fechaRaw.toLocaleString("en-US", { timeZone: "America/Bogota" }));
+  const day = `${fechaCol.getDate()}`.padStart(2, "0");
+  const month = `${fechaCol.getMonth() + 1}`.padStart(2, "0");
+  const year = `${fechaCol.getFullYear()}`;
   doc.fontSize(7).fillColor(COLORS.gray);
   doc.text("FECHA", rightX, rightBlockTop + row1H + 2, { align: "center", width: boxWidth });
   const cellW = boxWidth / 3;
@@ -361,26 +362,28 @@ function drawPagoFirma(doc, remision) {
     { label: "Efectivo", key: "efectivo" },
     { label: "Efectivo - Nequi", key: "nequi" },
     { label: "Transferencia - BanColombia", key: "bancolombia" },
+    { label: "Crédito", key: "credito" },
   ];
+  const metodosPago = remision.metodosPago || [{ key: remision.metodoPago, label: remision.metodoPago, monto: remision.total }];
   const optionsLeft = left + 110;
-  const optionWidth = 160;
-  const checkWidth = 30;
-  const rowHeight = 14;
+  const optionWidth = 130;
+  const checkWidth = 20;
+  const montoWidth = 70;
+  const rowHeight = 13;
   const rowGap = 2;
   const blockHeight = rowHeight * opciones.length + rowGap * (opciones.length - 1);
-  let y = top + (60 - blockHeight) / 2;
+  let y = top + (70 - blockHeight) / 2;
   opciones.forEach((opt) => {
+    const mp = metodosPago.find(m => m.key === opt.key);
+    const marcado = !!mp;
     drawBox(doc, optionsLeft, y - 2, optionWidth, rowHeight);
     drawBox(doc, optionsLeft + optionWidth, y - 2, checkWidth, rowHeight);
-    const marcado = remision.metodoPago.toLowerCase() === opt.key;
+    drawBox(doc, optionsLeft + optionWidth + checkWidth, y - 2, montoWidth, rowHeight);
     doc.fillColor(COLORS.black);
-    textCenteredInRow(doc, opt.label, optionsLeft + 6, y - 2, rowHeight, {
-      width: optionWidth - 12,
-    });
-    textCenteredInRow(doc, marcado ? "X" : "", optionsLeft + optionWidth, y - 2, rowHeight, {
-      width: checkWidth,
-      align: "center",
-    });
+    textCenteredInRow(doc, opt.label, optionsLeft + 4, y - 2, rowHeight, { width: optionWidth - 8 });
+    textCenteredInRow(doc, marcado ? "X" : "", optionsLeft + optionWidth, y - 2, rowHeight, { width: checkWidth, align: "center" });
+    const montoStr = marcado && mp.monto ? formatCurrency(mp.monto) : "";
+    textCenteredInRow(doc, montoStr, optionsLeft + optionWidth + checkWidth + 2, y - 2, rowHeight, { width: montoWidth - 4, align: "right" });
     y += rowHeight + rowGap;
   });
 
@@ -405,6 +408,17 @@ function drawPagoFirma(doc, remision) {
       width: 220,
       align: "left",
     });
+
+  // Observaciones
+  if (remision.observaciones) {
+    doc
+      .fontSize(8)
+      .fillColor(COLORS.gray)
+      .text(`Observaciones: ${remision.observaciones}`, left + 8, top + 148, {
+        width: 320,
+        align: "left",
+      });
+  }
 
   // Marca de agua deshabilitada por solicitud
 }
@@ -434,9 +448,10 @@ function drawTotales(doc, remision) {
 
 function drawFooter(doc, remision) {
   const footerY = PAGE_HEIGHT - MARGIN - 16;
-  const fecha = new Date(remision.fecha);
-  const date = `${String(fecha.getDate()).padStart(2, "0")}/${String(fecha.getMonth() + 1).padStart(2, "0")}/${fecha.getFullYear()}`;
-  const time = `${String(fecha.getHours()).padStart(2, "0")}:${String(fecha.getMinutes()).padStart(2, "0")}`;
+  const fechaRaw2 = new Date(remision.fecha);
+  const fechaCol2 = new Date(fechaRaw2.toLocaleString("en-US", { timeZone: "America/Bogota" }));
+  const date = `${String(fechaCol2.getDate()).padStart(2, "0")}/${String(fechaCol2.getMonth() + 1).padStart(2, "0")}/${fechaCol2.getFullYear()}`;
+  const time = `${String(fechaCol2.getHours()).padStart(2, "0")}:${String(fechaCol2.getMinutes()).padStart(2, "0")}`;
   doc
     .fontSize(8)
     .fillColor(COLORS.gray)
@@ -448,8 +463,8 @@ function drawFooter(doc, remision) {
 }
 
 function formatCurrency(value) {
-  const number = Math.round(Number(value || 0) * 100) / 100;
-  return `$ ${number.toLocaleString("es-CO", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+  const number = Number(value || 0);
+  return `$ ${number.toLocaleString("es-CO")}`;
 }
 
 async function getLogoImage(paths, width) {

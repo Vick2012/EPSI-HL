@@ -17,7 +17,12 @@ const remisionSchema = z.object({
   numero: safeLookupSchema("Número de remisión"),
   fecha: z.string().min(1),
   usuario: z.string().optional(),
-  metodoPago: z.enum(["efectivo", "nequi", "bancolombia"]),
+  metodoPago: z.enum(["efectivo", "nequi", "bancolombia", "credito"]),
+  metodosPago: z.array(z.object({
+    key: z.string(),
+    label: z.string(),
+    monto: z.number().min(0),
+  })).optional(),
   observaciones: z.string().optional(),
   bodega: z.string().trim().min(1),
   anulada: z.boolean().optional(),
