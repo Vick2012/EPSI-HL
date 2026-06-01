@@ -85,12 +85,13 @@ router.get("/:numero", authMiddleware, async (req, res) => {
     return res.status(400).json({ ok: false, message: numeroResult.message });
   }
   const db = await getDb();
-  const record = await db.get("SELECT data_json FROM remisiones WHERE numero = $1", numeroResult.value);
+  const record = await db.get("SELECT data_json, anulada FROM remisiones WHERE numero = $1", numeroResult.value);
   if (!record) {
     return res.status(404).json({ ok: false, message: "Remisión no encontrada." });
   }
   try {
     const data = typeof record.data_json === "string" ? JSON.parse(record.data_json) : record.data_json;
+    data.anulada = Boolean(record.anulada);
     return res.json({ ok: true, remision: data });
   } catch (_err) { // NOSONAR - Excepción manejada con console.error
     console.error("GET remision JSON:", _err);
@@ -107,12 +108,13 @@ router.get("/:numero/pdf", authMiddleware, async (req, res) => {
     return res.status(400).json({ ok: false, message: numeroResult.message });
   }
   const db = await getDb();
-  const record = await db.get("SELECT data_json FROM remisiones WHERE numero = $1", numeroResult.value);
+  const record = await db.get("SELECT data_json, anulada FROM remisiones WHERE numero = $1", numeroResult.value);
   if (!record) {
     return res.status(404).json({ ok: false, message: "Remisión no encontrada." });
   }
   try {
     const data = typeof record.data_json === "string" ? JSON.parse(record.data_json) : record.data_json;
+    data.anulada = Boolean(record.anulada);
     const pdfBuffer = await generateRemisionPdf(data);
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${buildPdfFilename(data.numero)}"`);
