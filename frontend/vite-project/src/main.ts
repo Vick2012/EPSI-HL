@@ -1701,21 +1701,28 @@ app.querySelector("#generar")!.addEventListener("click", async () => {
     return;
   }
 
-  // En modo edición: descargar PDF existente sin crear uno nuevo
+  // En modo edición: guardar cambios y luego descargar PDF actualizado
   if (editingRemisionNumero) {
-    statusEl.textContent = "Descargando PDF...";
+    statusEl.textContent = "Guardando y generando PDF...";
     try {
+      const payload = buildRemisionPayload();
+      const saveResponse = await updateRemision(editingRemisionNumero, payload, token);
+      if (!saveResponse.ok) {
+        const msg = await saveResponse.text();
+        statusEl.textContent = msg || "No se pudo guardar la remisión.";
+        return;
+      }
       const pdfResponse = await fetchRemisionPdf(editingRemisionNumero, token);
       if (pdfResponse.ok) {
         const pdf = await pdfResponse.blob();
         const filename = getPdfFilename(pdfResponse, editingRemisionNumero);
         await downloadPdfBlob(pdf, filename);
-        statusEl.textContent = "PDF descargado.";
+        statusEl.textContent = "PDF generado.";
       } else {
         statusEl.textContent = "No se pudo descargar el PDF.";
       }
     } catch {
-      statusEl.textContent = "Error descargando el PDF.";
+      statusEl.textContent = "Error generando el PDF.";
     }
     return;
   }
