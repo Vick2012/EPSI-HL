@@ -471,12 +471,14 @@ app.innerHTML = `
                     <span>Descripción</span>
                     <span>Valor unitario</span>
                     <span>Subtotal</span>
+                    <span></span>
                   </div>
                   <div class="items-row">
                     <input class="item-cantidad" type="number" value="1" min="1" />
                     <input class="item-descripcion" type="text" placeholder="Descripción" />
                     <input class="item-unitario" type="number" placeholder="0" min="0" />
                     <input class="item-subtotal" type="number" placeholder="0" min="0" readonly />
+                    <button class="item-delete-btn" type="button" title="Eliminar item">&#x2715;</button>
                   </div>
                 </div>
                 <button id="add-item" class="secondary">Agregar item</button>
@@ -499,6 +501,7 @@ app.innerHTML = `
                   <div>Subtotal: <span id="subtotal">$ 0</span></div>
                   <div class="totals-iva">IVA (19%): <span id="iva-valor">$ 0</span></div>
                   <div class="totals-total">Total: <span id="total">$ 0</span></div>
+                  <div class="totals-pagos">Pagos registrados: <span id="pagos-suma">$ 0</span></div>
                 </div>
                 <button id="guardar-remision" class="secondary hidden" type="button">Guardar cambios</button>
                 <button id="generar" class="primary wizard-generar">Generar PDF</button>
@@ -651,6 +654,7 @@ const userCreateBtn = app.querySelector<HTMLButtonElement>("#user-create")!;
 const userCancelBtn = app.querySelector<HTMLButtonElement>("#user-cancel")!;
 let editingUserId: string | null = null;
 let editingRemisionNumero: string | null = null;
+let formBloqueadoPostPdf = false;
 let wizardCurrentStep = 1;
 const WIZARD_MAX_STEP = 3;
 const usersStatus = app.querySelector<HTMLSpanElement>("#users-status")!;
@@ -1308,6 +1312,12 @@ const validateWizardStep = (step: number): boolean => {
 };
 
 const goRemisiones = async () => {
+  if (formBloqueadoPostPdf) {
+    formBloqueadoPostPdf = false;
+    remisionView.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLButtonElement | HTMLTextAreaElement>(
+      'input, select, button, textarea'
+    ).forEach((el) => { el.disabled = false; });
+  }
   homeView.classList.add("hidden");
   remisionView.classList.remove("hidden");
   usersView.classList.add("hidden");
@@ -1379,42 +1389,65 @@ backButton.addEventListener("click", () => {
   showLoginPage();
 });
 
+const calcSumaPagos = (): number => {
+  let suma = 0;
+  app.querySelectorAll<HTMLInputElement>(".metodo-check").forEach((chk) => {
+    if (chk.checked) {
+      suma += Number(chk.closest(".metodo-pago-row")?.querySelector<HTMLInputElement>(".metodo-monto")?.value || 0);
+    }
+  });
+  return Math.round(suma * 100) / 100;
+};
+
+const validarSumaPagos = (): { ok: boolean; mensaje: string } => {
+  const sumaPagos = calcSumaPagos();
+  if (sumaPagos === 0) return { ok: true, mensaje: "" };
+  const total = Math.round(Number(app.querySelector<HTMLInputElement>("#remision-total")!.value || 0) * 100) / 100;
+  if (Math.abs(sumaPagos - total) > 0.01) {
+    return {
+      ok: false,
+      mensaje: `Los métodos de pago (${formatCurrency(sumaPagos)}) no coinciden con el total de la remisión (${formatCurrency(total)}). Ajuste los valores antes de generar el PDF.`,
+    };
+  }
+  return { ok: true, mensaje: "" };
+};
+
 const recalc = () => {
-  // Calcular subtotales de items (cantidad x valor unitario)
+  // Subtotales de ítems (cantidad × valor unitario)
   const itemRows = Array.from(app.querySelectorAll<HTMLDivElement>(".items-row"));
   itemRows.forEach((row) => {
     const cantidad = Number(row.querySelector<HTMLInputElement>(".item-cantidad")!.value || 0);
     const unitario = Number(row.querySelector<HTMLInputElement>(".item-unitario")!.value || 0);
-    const rowSubtotal = cantidad * unitario;
-    row.querySelector<HTMLInputElement>(".item-subtotal")!.value = String(rowSubtotal);
+    row.querySelector<HTMLInputElement>(".item-subtotal")!.value = String(cantidad * unitario);
   });
 
-  // Total = suma de montos de metodos de pago seleccionados
-  const metodoChecks = Array.from(app.querySelectorAll<HTMLInputElement>(".metodo-check")).filter(c => c.checked);
+  // Total siempre desde los ítems
   let total = 0;
-  metodoChecks.forEach(c => {
-    const monto = Number(c.closest(".metodo-pago-row")?.querySelector<HTMLInputElement>(".metodo-monto")?.value || 0);
-    total += monto;
+  itemRows.forEach((row) => {
+    total += Number(row.querySelector<HTMLInputElement>(".item-subtotal")!.value || 0);
   });
-
-  // Si no hay metodos de pago seleccionados, sumar items como fallback
-  if (total === 0) {
-    itemRows.forEach((row) => {
-      total += Number(row.querySelector<HTMLInputElement>(".item-subtotal")!.value || 0);
-    });
-  }
-
   total = Math.round(total * 100) / 100;
   const subtotal = Math.round((total / 1.19) * 100) / 100;
   const iva = Math.round((total - subtotal) * 100) / 100;
 
   const totalInput = app.querySelector<HTMLInputElement>("#remision-total")!;
   if (totalInput) totalInput.value = String(total);
-
   subtotalEl.textContent = formatCurrency(subtotal);
   const ivaEl = app.querySelector<HTMLSpanElement>("#iva-valor");
   if (ivaEl) ivaEl.textContent = formatCurrency(iva);
   totalEl.textContent = formatCurrency(total);
+
+  // Indicador de pagos vs total
+  const sumaPagos = calcSumaPagos();
+  const pagosSumaEl = app.querySelector<HTMLSpanElement>("#pagos-suma");
+  const pagosRow = app.querySelector<HTMLElement>(".totals-pagos");
+  if (pagosSumaEl) pagosSumaEl.textContent = formatCurrency(sumaPagos);
+  if (pagosRow) {
+    pagosRow.classList.remove("pagos-ok", "pagos-error");
+    if (sumaPagos > 0) {
+      pagosRow.classList.add(Math.abs(sumaPagos - total) < 0.01 ? "pagos-ok" : "pagos-error");
+    }
+  }
 };
 
 const resetItemsTable = () => {
@@ -1449,6 +1482,22 @@ const exitEditMode = () => {
   applyRole(getRole());
 };
 
+const lockFormAfterPdf = () => {
+  formBloqueadoPostPdf = true;
+  remisionView.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLButtonElement | HTMLTextAreaElement>(
+    'input, select, button, textarea'
+  ).forEach((el) => { el.disabled = true; });
+  statusEl.textContent = 'PDF generado. Para modificar, salga del módulo y busque la remisión.';
+};
+
+const updateDeleteButtons = () => {
+  const rows = itemsTable.querySelectorAll<HTMLDivElement>(".items-row");
+  rows.forEach((r) => {
+    const btn = r.querySelector<HTMLButtonElement>(".item-delete-btn");
+    if (btn) btn.disabled = rows.length <= 1;
+  });
+};
+
 const addItemRow = (item?: { cantidad?: number; descripcion?: string; valorUnitario?: number; subtotal?: number }) => {
   const row = document.createElement("div");
   row.className = "items-row";
@@ -1457,6 +1506,7 @@ const addItemRow = (item?: { cantidad?: number; descripcion?: string; valorUnita
     <input class="item-descripcion" type="text" placeholder="Descripción" />
     <input class="item-unitario" type="number" placeholder="0" min="0" />
     <input class="item-subtotal" type="number" placeholder="0" min="0" readonly />
+    <button class="item-delete-btn" type="button" title="Eliminar item">&#x2715;</button>
   `;
   if (item) {
     (row.querySelector<HTMLInputElement>(".item-cantidad")!).value = String(item.cantidad ?? 1);
@@ -1464,13 +1514,32 @@ const addItemRow = (item?: { cantidad?: number; descripcion?: string; valorUnita
     (row.querySelector<HTMLInputElement>(".item-unitario")!).value = String(item.valorUnitario ?? 0);
     (row.querySelector<HTMLInputElement>(".item-subtotal")!).value = String(item.subtotal ?? 0);
   }
+  row.querySelector<HTMLButtonElement>(".item-delete-btn")!.addEventListener("click", () => {
+    row.remove();
+    recalc();
+    updateDeleteButtons();
+  });
   itemsTable.appendChild(row);
   row.querySelectorAll("input").forEach((input) => input.addEventListener("input", recalc));
+  updateDeleteButtons();
 };
 
 app.querySelector("#add-item")!.addEventListener("click", () => {
   addItemRow();
 });
+
+// Conectar botón eliminar del row inicial (estático en HTML)
+itemsTable.querySelectorAll<HTMLDivElement>(".items-row").forEach((row) => {
+  const btn = row.querySelector<HTMLButtonElement>(".item-delete-btn");
+  if (btn) {
+    btn.addEventListener("click", () => {
+      row.remove();
+      recalc();
+      updateDeleteButtons();
+    });
+  }
+});
+updateDeleteButtons();
 
 app.querySelectorAll("input, select").forEach((input) => {
   input.addEventListener("input", recalc);
@@ -1668,6 +1737,13 @@ guardarRemisionBtn.addEventListener("click", async () => {
     statusEl.textContent = "No hay remisión en edición.";
     return;
   }
+  const validacionPagos = validarSumaPagos();
+  if (!validacionPagos.ok) {
+    statusEl.className = "status status-error-alert";
+    statusEl.textContent = validacionPagos.mensaje;
+    return;
+  }
+  statusEl.className = "status";
   statusEl.textContent = "Guardando cambios...";
   try {
     const payload = buildRemisionPayload();
@@ -1683,7 +1759,7 @@ guardarRemisionBtn.addEventListener("click", async () => {
       const filename = getPdfFilename(pdfResponse, editingRemisionNumero);
       await downloadPdfBlob(pdf, filename);
     }
-    statusEl.textContent = "Remisión actualizada.";
+    lockFormAfterPdf();
   } catch {
     statusEl.textContent = "Error guardando la remisión.";
   }
@@ -1700,6 +1776,13 @@ app.querySelector("#generar")!.addEventListener("click", async () => {
     statusEl.textContent = "";
     return;
   }
+  const validacionPagos = validarSumaPagos();
+  if (!validacionPagos.ok) {
+    statusEl.className = "status status-error-alert";
+    statusEl.textContent = validacionPagos.mensaje;
+    return;
+  }
+  statusEl.className = "status";
 
   // En modo edición: guardar cambios y luego descargar PDF actualizado
   if (editingRemisionNumero) {
@@ -1717,7 +1800,7 @@ app.querySelector("#generar")!.addEventListener("click", async () => {
         const pdf = await pdfResponse.blob();
         const filename = getPdfFilename(pdfResponse, editingRemisionNumero);
         await downloadPdfBlob(pdf, filename);
-        statusEl.textContent = "PDF generado.";
+        lockFormAfterPdf();
       } else {
         statusEl.textContent = "No se pudo descargar el PDF.";
       }
@@ -1736,8 +1819,8 @@ app.querySelector("#generar")!.addEventListener("click", async () => {
     const pdf = await response.blob();
     const filename = getPdfFilename(response, payload.numero);
     await downloadPdfBlob(pdf, filename);
-    statusEl.textContent = "PDF generado.";
     await cargarConsecutivo();
+    lockFormAfterPdf();
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") {
       statusEl.textContent = "Debes iniciar sesión para generar remisiones.";
