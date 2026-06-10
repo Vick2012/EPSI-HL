@@ -2669,59 +2669,67 @@ select {
   }
 }
 
-/* ── Multi-método de pago ── */
-.metodos-pago-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  grid-column: 1 / -1;
+/* ── Sección método(s) de pago ── */
+.pagos-section {
   width: 100%;
+  margin-top: 18px;
+  margin-bottom: 2px;
 }
 
-.metodos-pago-title {
-  font-size: 12px;
+.pagos-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.pagos-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
   font-weight: 700;
   color: #475467;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
 }
 
 .metodos-pago-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px;
+  gap: 10px;
   width: 100%;
 }
 
 .metodo-pago-row {
   display: flex;
+  flex-direction: row;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
+  gap: 10px;
+  padding: 10px 12px;
   border: 1.5px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: 12px;
   background: #f8fafc;
-  transition: border-color 0.2s, background 0.2s;
-  min-width: 0;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
 }
 
 .metodo-pago-row:has(.metodo-check:checked) {
   border-color: #1f3f83;
-  background: rgba(31, 63, 131, 0.05);
+  background: rgba(31, 63, 131, 0.03);
+  box-shadow: 0 0 0 3px rgba(31, 63, 131, 0.10);
 }
 
 .metodo-check-label {
   display: flex;
   align-items: center;
-  gap: 7px;
-  flex: 1;
+  gap: 10px;
   cursor: pointer;
+  flex: 1;
   min-width: 0;
 }
 
 .metodo-check {
-  width: 15px !important;
-  height: 15px !important;
+  width: 17px !important;
+  height: 17px !important;
   accent-color: #1f3f83;
   flex-shrink: 0;
   padding: 0 !important;
@@ -2729,29 +2737,95 @@ select {
   cursor: pointer;
 }
 
+.metodo-icon-wrap {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: #e8edf7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1f3f83;
+  flex-shrink: 0;
+  transition: background 0.2s, color 0.2s;
+}
+
+.metodo-pago-row:has(.metodo-check:checked) .metodo-icon-wrap {
+  background: #1f3f83;
+  color: #fff;
+}
+
 .metodo-nombre {
   font-size: 13px;
   font-weight: 600;
   color: #1e293b;
+  flex: 1;
+  line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
 }
 
-.metodo-monto {
-  width: 100px !important;
-  padding: 5px 8px !important;
-  font-size: 13px !important;
-  border-radius: 6px !important;
-  border: 1px solid #d0d5dd !important;
-  text-align: right;
+.metodo-input-wrap {
+  display: flex;
+  align-items: stretch;
+  width: 200px;
   flex-shrink: 0;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.metodo-pago-row:has(.metodo-check:checked) .metodo-input-wrap {
+  border-color: #b8c8e8;
+}
+
+.metodo-input-wrap:has(.metodo-monto:not(:disabled)):focus-within {
+  border-color: #1f3f83;
+  box-shadow: 0 0 0 3px rgba(31, 63, 131, 0.13);
+}
+
+.metodo-input-wrap:has(.metodo-monto:disabled) {
+  background: #f8fafc;
+}
+
+.metodo-currency {
+  padding: 8px 10px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+  border-right: 1.5px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  user-select: none;
+  flex-shrink: 0;
+  transition: color 0.2s;
+}
+
+.metodo-input-wrap:has(.metodo-monto:disabled) .metodo-currency {
+  color: #cbd5e1;
+}
+
+.metodo-monto {
+  flex: 1 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  padding: 8px 10px !important;
+  font-size: 14px !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  outline: none !important;
+  text-align: right;
+  box-shadow: none !important;
 }
 
 .metodo-monto:disabled {
-  background: #f1f5f9 !important;
-  color: #cbd5e1 !important;
+  color: #94a3b8 !important;
   cursor: not-allowed;
 }
 

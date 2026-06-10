@@ -429,40 +429,6 @@ app.innerHTML = `
                   <label id="remision-anulada-wrap" class="admin-only hidden">Anulada
                     <input id="remision-anulada" type="checkbox" />
                   </label>
-                  <div class="metodos-pago-wrap">
-                    <span class="metodos-pago-title">Método(s) de pago</span>
-                    <div class="metodos-pago-grid">
-                      <div class="metodo-pago-row">
-                        <label class="metodo-check-label">
-                          <input type="checkbox" class="metodo-check" value="efectivo" />
-                          <span class="metodo-nombre">Efectivo</span>
-                        </label>
-                        <input type="number" class="metodo-monto" placeholder="Monto $" min="0" disabled />
-                      </div>
-                      <div class="metodo-pago-row">
-                        <label class="metodo-check-label">
-                          <input type="checkbox" class="metodo-check" value="nequi" />
-                          <span class="metodo-nombre">Efectivo - Nequi</span>
-                        </label>
-                        <input type="number" class="metodo-monto" placeholder="Monto $" min="0" disabled />
-                      </div>
-                      <div class="metodo-pago-row">
-                        <label class="metodo-check-label">
-                          <input type="checkbox" class="metodo-check" value="bancolombia" />
-                          <span class="metodo-nombre">Transferencia - Bancolombia</span>
-                        </label>
-                        <input type="number" class="metodo-monto" placeholder="Monto $" min="0" disabled />
-                      </div>
-                      <div class="metodo-pago-row">
-                        <label class="metodo-check-label">
-                          <input type="checkbox" class="metodo-check" value="credito" />
-                          <span class="metodo-nombre">Crédito</span>
-                        </label>
-                        <input type="number" class="metodo-monto" placeholder="Monto $" min="0" disabled />
-                      </div>
-                    </div>
-                    <input type="hidden" id="remision-pago" value="efectivo" />
-                  </div>
                   <input id="remision-total" type="number" value="0" min="0" style="display:none;" />
                 </div>
                 <div class="items-table">
@@ -482,6 +448,69 @@ app.innerHTML = `
                   </div>
                 </div>
                 <button id="add-item" class="secondary">Agregar item</button>
+                <div class="pagos-section">
+                  <div class="pagos-header">
+                    <span class="pagos-title">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                      Método(s) de pago
+                    </span>
+                  </div>
+                  <div class="metodos-pago-grid">
+                    <div class="metodo-pago-row">
+                      <label class="metodo-check-label">
+                        <input type="checkbox" class="metodo-check" value="efectivo" />
+                        <span class="metodo-icon-wrap">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
+                        </span>
+                        <span class="metodo-nombre">Efectivo</span>
+                      </label>
+                      <div class="metodo-input-wrap">
+                        <span class="metodo-currency">$</span>
+                        <input type="number" class="metodo-monto" placeholder="0" min="0" disabled />
+                      </div>
+                    </div>
+                    <div class="metodo-pago-row">
+                      <label class="metodo-check-label">
+                        <input type="checkbox" class="metodo-check" value="nequi" />
+                        <span class="metodo-icon-wrap">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                        </span>
+                        <span class="metodo-nombre">Efectivo – Nequi</span>
+                      </label>
+                      <div class="metodo-input-wrap">
+                        <span class="metodo-currency">$</span>
+                        <input type="number" class="metodo-monto" placeholder="0" min="0" disabled />
+                      </div>
+                    </div>
+                    <div class="metodo-pago-row">
+                      <label class="metodo-check-label">
+                        <input type="checkbox" class="metodo-check" value="bancolombia" />
+                        <span class="metodo-icon-wrap">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="22" x2="21" y2="22"/><line x1="6" y1="18" x2="6" y2="11"/><line x1="10" y1="18" x2="10" y2="11"/><line x1="14" y1="18" x2="14" y2="11"/><line x1="18" y1="18" x2="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>
+                        </span>
+                        <span class="metodo-nombre">Transferencia – Bancolombia</span>
+                      </label>
+                      <div class="metodo-input-wrap">
+                        <span class="metodo-currency">$</span>
+                        <input type="number" class="metodo-monto" placeholder="0" min="0" disabled />
+                      </div>
+                    </div>
+                    <div class="metodo-pago-row">
+                      <label class="metodo-check-label">
+                        <input type="checkbox" class="metodo-check" value="credito" />
+                        <span class="metodo-icon-wrap">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                        </span>
+                        <span class="metodo-nombre">Crédito</span>
+                      </label>
+                      <div class="metodo-input-wrap">
+                        <span class="metodo-currency">$</span>
+                        <input type="number" class="metodo-monto" placeholder="0" min="0" disabled />
+                      </div>
+                    </div>
+                  </div>
+                  <input type="hidden" id="remision-pago" value="efectivo" />
+                </div>
                 <div class="observaciones-wrap">
                   <label class="observaciones-label">Observaciones
                     <input id="remision-observaciones" type="text" placeholder="Observaciones (opcional)" />
@@ -656,6 +685,7 @@ let editingUserId: string | null = null;
 let editingRemisionNumero: string | null = null;
 let formBloqueadoPostPdf = false;
 let wizardCurrentStep = 1;
+let clientePendienteGuardar = false;
 const WIZARD_MAX_STEP = 3;
 const usersStatus = app.querySelector<HTMLSpanElement>("#users-status")!;
 const usersActiveList = app.querySelector<HTMLDivElement>("#users-active-list")!;
@@ -785,6 +815,13 @@ const goHome = () => {
 
 /** Limpia el formulario de remisión al cambiar de usuario (evita que persistan datos del usuario anterior) */
 const clearRemisionForm = () => {
+  if (formBloqueadoPostPdf) {
+    formBloqueadoPostPdf = false;
+    remisionView.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLButtonElement | HTMLTextAreaElement>(
+      'input, select, button, textarea'
+    ).forEach((el) => { el.disabled = false; });
+  }
+  setClientePendiente(false);
   exitEditMode();
   clienteNitInput.value = "";
   clienteDvInput.value = "";
@@ -793,6 +830,7 @@ const clearRemisionForm = () => {
   clienteDireccionInput.value = "";
   clienteCiudadInput.value = "";
   clienteTelefonoInput.value = "";
+  clienteEmailInput.value = "";
   resetItemsTable();
   addItemRow();
   app.querySelectorAll<HTMLInputElement>(".metodo-check").forEach(chk => {
@@ -1031,6 +1069,13 @@ const saveClienteDb = async (
   return saveCliente(payload, token);
 };
 
+const setClientePendiente = (pendiente: boolean) => {
+  clientePendienteGuardar = pendiente;
+  if (wizardCurrentStep === 1) {
+    wizardNextBtn.disabled = pendiente;
+  }
+};
+
 const llenarCliente = (cliente: Record<string, string>) => {
   const tipoDocumento = cliente.tipoDocumento || cliente.tipo_documento || "CC";
   clienteTipoSelect.value = tipoDocumento;
@@ -1040,6 +1085,7 @@ const llenarCliente = (cliente: Record<string, string>) => {
   clienteTelefonoInput.value = cliente.telefono || "";
   clienteEmailInput.value = cliente.email || "";
   clienteDvInput.value = cliente.dv || calcularDv(clienteNitInput.value);
+  setClientePendiente(false);
 };
 
 const limpiarCliente = () => {
@@ -1053,6 +1099,7 @@ const limpiarCliente = () => {
 
 clienteNitInput.addEventListener("input", () => {
   actualizarDv();
+  setClientePendiente(false);
 });
 
 clienteNitInput.addEventListener("blur", async () => {
@@ -1067,7 +1114,8 @@ clienteNitInput.addEventListener("blur", async () => {
   } else {
     limpiarCliente();
     clienteValidationWarning.classList.add("hidden");
-    clienteStatusEl.textContent = "Cliente no encontrado. Puedes guardarlo.";
+    clienteStatusEl.textContent = "Cliente no encontrado. Guárdalo para continuar.";
+    setClientePendiente(true);
   }
 });
 
@@ -1110,8 +1158,9 @@ guardarClienteBtn.addEventListener("click", async () => {
   };
   const result = await saveClienteDb(cliente);
   if (result.ok) {
-    clienteStatusEl.textContent = "Cliente guardado correctamente.";
+    clienteStatusEl.textContent = "Cliente guardado. Puedes continuar.";
     clienteValidationWarning.classList.add("hidden");
+    setClientePendiente(false);
   } else if (result.message === "Debes iniciar sesión.") {
     clienteStatusEl.textContent = result.message;
     clienteValidationWarning.classList.add("hidden");
@@ -1261,6 +1310,7 @@ const goToWizardStep = (step: number) => {
 
   wizardPrevBtn.classList.toggle("hidden", step === 1);
   wizardNextBtn.classList.toggle("hidden", step === WIZARD_MAX_STEP);
+  wizardNextBtn.disabled = step === 1 && clientePendienteGuardar;
   if (step === 3) {
     recalc();
     renderPreview();
@@ -1487,7 +1537,8 @@ const lockFormAfterPdf = () => {
   remisionView.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLButtonElement | HTMLTextAreaElement>(
     'input, select, button, textarea'
   ).forEach((el) => { el.disabled = true; });
-  statusEl.textContent = 'PDF generado. Para modificar, salga del módulo y busque la remisión.';
+  nuevaRemisionBtn.disabled = false;
+  statusEl.textContent = 'PDF generado. Usa "+ Nueva remisión" para crear otra o busca la remisión para editarla.';
 };
 
 const updateDeleteButtons = () => {
@@ -1634,8 +1685,10 @@ editarRemisionBtn.addEventListener("click", () => {
 nuevaRemisionBtn.addEventListener("click", () => {
   clearRemisionForm();
   editarRemisionBtn.classList.add("hidden");
+  cancelarEdicionRemisionBtn.classList.add("hidden");
   buscarRemisionNumeroInput.value = "";
   buscarRemisionStatus.textContent = "";
+  remisionView.querySelector<HTMLElement>(".remision-wizard")?.scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
 wizardPrevBtn.addEventListener("click", () => {
